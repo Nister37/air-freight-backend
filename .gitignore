@@ -1,0 +1,16 @@
+# IDE
+.idea/
+*.iml
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+Lectures/
+
+# Agent bridge
+.agentbridge/
+
+# System files
+.DS_Store
+Thumbs.db
