@@ -5,6 +5,18 @@
 # Dependencies
 node_modules/
 
+# Gradle build output
+.gradle/
+build/
+
+# Local Docker data
+/postgresql/
+/rabbitmq/
+/idp_mysql_data/
+
+# Local environment settings
+.env
+
 # Build artifacts
 Lectures/
 
