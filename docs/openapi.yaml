@@ -1,0 +1,436 @@
+openapi: 3.0.3
+info:
+  title: Air Freight Operations API
+  version: 0.0.1-SNAPSHOT
+  description: |
+    Session-authenticated operational API. Flight planners, load planners and
+    admins can read; only flight planners change flights, and only admins update
+    policy. Admin does not imply flight-planner rights.
+
+    Login: GET /login to obtain JSESSIONID and the hidden _csrf value, then POST
+    /login with those values and form credentials. Keep the rotated session cookie
+    from the successful redirect. GET /login again with that cookie for a fresh
+    CSRF token. Send JSESSIONID on subsequent requests and X-CSRF-TOKEN on mutations.
+    The local profile provides planner, loader and admin accounts (local123).
+
+    Date-times are UTC LocalDateTime strings without Z or an offset. They are
+    described as strings rather than RFC 3339 date-time values to match the API.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Authentication
+  - name: Flights
+  - name: Policy
+security:
+  - SessionCookie: []
+paths:
+  /login:
+    get:
+      tags: [Authentication]
+      operationId: getLoginForm
+      summary: Get the generated login form and CSRF token
+      security: []
+      responses:
+        '200':
+          description: HTML form containing the hidden _csrf token; creates a session if needed.
+          headers:
+            Set-Cookie:
+              description: JSESSIONID cookie when a session is created.
+              schema: {type: string}
+          content:
+            text/html:
+              schema: {type: string}
+    post:
+      tags: [Authentication]
+      operationId: logIn
+      summary: Authenticate with form credentials and the pre-login session
+      description: Send the cookie from GET /login. Follow-up API requests use the rotated cookie.
+      security:
+        - SessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password, _csrf]
+              properties:
+                username: {type: string, example: planner}
+                password: {type: string, format: password}
+                _csrf: {type: string, description: Hidden token from the login form.}
+      responses:
+        '302':
+          description: Successful login redirects to /; invalid credentials redirect to /login?error.
+          headers:
+            Location:
+              schema: {type: string}
+            Set-Cookie:
+              description: Rotated JSESSIONID on success.
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/flights:
+    get:
+      tags: [Flights]
+      operationId: listFlights
+      summary: List flights, optionally by scheduled departure date
+      description: Requires flight-planner, load-planner or admin.
+      parameters:
+        - name: date
+          in: query
+          schema: {type: string, format: date}
+          description: UTC scheduled departure date.
+      responses:
+        '200':
+          description: Current flight snapshots.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/FlightFacts'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/flights/{number}/{date}/{airport}:
+    parameters:
+      - {$ref: '#/components/parameters/FlightNumber'}
+      - {$ref: '#/components/parameters/FlightDate'}
+      - {$ref: '#/components/parameters/DepartureAirport'}
+    get:
+      tags: [Flights]
+      operationId: getFlight
+      summary: Read a flight and its delays
+      description: Requires flight-planner, load-planner or admin.
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/flights/{number}/{date}/{airport}/delays:
+    parameters:
+      - {$ref: '#/components/parameters/FlightNumber'}
+      - {$ref: '#/components/parameters/FlightDate'}
+      - {$ref: '#/components/parameters/DepartureAirport'}
+    post:
+      tags: [Flights]
+      operationId: registerDelay
+      summary: Register a departure or arrival delay
+      description: Requires flight-planner. Delays combined may not exceed 720 minutes.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterDelay'}
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/flights/{number}/{date}/{airport}/delays/{delayId}:
+    parameters:
+      - {$ref: '#/components/parameters/FlightNumber'}
+      - {$ref: '#/components/parameters/FlightDate'}
+      - {$ref: '#/components/parameters/DepartureAirport'}
+      - name: delayId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    put:
+      tags: [Flights]
+      operationId: correctDelay
+      summary: Correct a delay's minutes and description
+      description: Requires flight-planner. The delay ID, phase and code stay the same.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorrectDelay'}
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    delete:
+      tags: [Flights]
+      operationId: removeDelay
+      summary: Remove a delay and return the updated flight
+      description: Requires flight-planner.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/flights/{number}/{date}/{airport}/departure:
+    parameters:
+      - {$ref: '#/components/parameters/FlightNumber'}
+      - {$ref: '#/components/parameters/FlightDate'}
+      - {$ref: '#/components/parameters/DepartureAirport'}
+    post:
+      tags: [Flights]
+      operationId: recordDeparture
+      summary: Record actual departure
+      description: |
+        Requires flight-planner and a processed final-load CPM. The time must not
+        be in the future or later than ETD plus the configured tolerance. Actual
+        departure can be recorded once; departure delays then become immutable.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActualTime'}
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/flights/{number}/{date}/{airport}/arrival:
+    parameters:
+      - {$ref: '#/components/parameters/FlightNumber'}
+      - {$ref: '#/components/parameters/FlightDate'}
+      - {$ref: '#/components/parameters/DepartureAirport'}
+    post:
+      tags: [Flights]
+      operationId: recordArrival
+      summary: Record actual arrival
+      description: |
+        Requires flight-planner and an actual departure. Arrival must be after
+        departure, not in the future and no later than ETA plus tolerance.
+        Actual arrival can be recorded once; all delays then become immutable.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ActualTime'}
+      responses:
+        '200': {$ref: '#/components/responses/Flight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/policy:
+    get:
+      tags: [Policy]
+      operationId: getPolicy
+      summary: Read operational settings
+      description: Requires flight-planner, load-planner or admin. Returns defaults until settings are saved.
+      responses:
+        '200': {$ref: '#/components/responses/Policy'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    put:
+      tags: [Policy]
+      operationId: updatePolicy
+      summary: Replace all six operational settings
+      description: Requires admin. Opening offset must exceed the closing offset. Changes persist across restarts.
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OperationsPolicy'}
+      responses:
+        '200': {$ref: '#/components/responses/Policy'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Session cookie obtained through form login.
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: Fresh hidden _csrf value from GET /login after authentication.
+  parameters:
+    FlightNumber:
+      name: number
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Z0-9]{2}[0-9]{1,4}[A-Z]?$', example: HJ9001}
+    FlightDate:
+      name: date
+      in: path
+      required: true
+      schema: {type: string, format: date, example: '2026-10-11'}
+      description: Scheduled UTC departure date, part of the flight identity.
+    DepartureAirport:
+      name: airport
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[A-Z]{3}$', example: BRU}
+  schemas:
+    UtcLocalDateTime:
+      type: string
+      description: UTC local date-time; no offset or Z suffix.
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?$'
+      example: '2026-10-11T10:00:00'
+    OptionalUtcLocalDateTime:
+      type: string
+      nullable: true
+      description: UTC local date-time, or null when not recorded.
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?$'
+      example: null
+    Airport:
+      type: object
+      required: [value]
+      properties:
+        value: {type: string, pattern: '^[A-Z]{3}$', example: BRU}
+    FlightNumber:
+      type: object
+      required: [value]
+      properties:
+        value: {type: string, pattern: '^[A-Z0-9]{2}[0-9]{1,4}[A-Z]?$', example: HJ9001}
+    AircraftRegistration:
+      type: object
+      required: [value]
+      properties:
+        value: {type: string, pattern: '^[A-Z0-9][A-Z0-9-]{1,14}$', example: SXBAA}
+    FlightId:
+      type: object
+      required: [flightNumber, scheduledDepartureDate, departureAirport]
+      properties:
+        flightNumber: {$ref: '#/components/schemas/FlightNumber'}
+        scheduledDepartureDate: {type: string, format: date}
+        departureAirport: {$ref: '#/components/schemas/Airport'}
+    Delay:
+      type: object
+      required: [id, code, description, minutes, phase]
+      properties:
+        id: {type: string, format: uuid}
+        code: {type: string, pattern: '^[0-9]{2}$', example: '93'}
+        description: {type: string}
+        minutes: {type: integer, minimum: 1, maximum: 720}
+        phase: {type: string, enum: [DEPARTURE, ARRIVAL]}
+    FlightFacts:
+      type: object
+      required: [id, arrivalAirport, aircraftRegistration, scheduledDeparture, scheduledArrival, estimatedDeparture, estimatedArrival, actualDeparture, actualArrival, status, finalLoadReceived, delays]
+      properties:
+        id: {$ref: '#/components/schemas/FlightId'}
+        arrivalAirport: {$ref: '#/components/schemas/Airport'}
+        aircraftRegistration: {$ref: '#/components/schemas/AircraftRegistration'}
+        scheduledDeparture: {$ref: '#/components/schemas/UtcLocalDateTime'}
+        scheduledArrival: {$ref: '#/components/schemas/UtcLocalDateTime'}
+        estimatedDeparture: {$ref: '#/components/schemas/UtcLocalDateTime'}
+        estimatedArrival: {$ref: '#/components/schemas/UtcLocalDateTime'}
+        actualDeparture: {$ref: '#/components/schemas/OptionalUtcLocalDateTime'}
+        actualArrival: {$ref: '#/components/schemas/OptionalUtcLocalDateTime'}
+        status: {type: string, enum: [SCHEDULED, DEPARTED, LANDED]}
+        finalLoadReceived: {type: boolean}
+        delays:
+          type: array
+          items: {$ref: '#/components/schemas/Delay'}
+    RegisterDelay:
+      type: object
+      required: [phase, code, minutes, description]
+      properties:
+        phase: {type: string, enum: [DEPARTURE, ARRIVAL]}
+        code: {type: string, pattern: '^[0-9]{2}$', example: '93'}
+        minutes: {type: integer, minimum: 1, maximum: 720, example: 20}
+        description: {type: string, minLength: 1, description: Must contain non-whitespace text., example: Aircraft rotation}
+    CorrectDelay:
+      type: object
+      required: [minutes, description]
+      properties:
+        minutes: {type: integer, minimum: 1, maximum: 720, example: 15}
+        description: {type: string, minLength: 1, description: Must contain non-whitespace text., example: Updated aircraft rotation}
+    ActualTime:
+      type: object
+      required: [actualTime]
+      properties:
+        actualTime: {$ref: '#/components/schemas/UtcLocalDateTime'}
+    OperationsPolicy:
+      type: object
+      required: [offloadingConstraint, loadingWindowOpeningMinutes, loadingWindowClosingMinutes, maximumLateralWeightDifferencePercent, flightRetentionDays, actualTimeToleranceMinutes]
+      properties:
+        offloadingConstraint: {type: string, enum: [HARD, SOFT], default: HARD}
+        loadingWindowOpeningMinutes: {type: integer, minimum: 1, default: 720}
+        loadingWindowClosingMinutes: {type: integer, minimum: 0, default: 20}
+        maximumLateralWeightDifferencePercent:
+          type: number
+          minimum: 0
+          multipleOf: 0.000001
+          default: 10
+          description: Up to 13 integer and 6 fractional digits.
+        flightRetentionDays: {type: integer, minimum: 1, default: 7}
+        actualTimeToleranceMinutes: {type: integer, minimum: 0, default: 5}
+    ApiError:
+      type: object
+      required: [detail]
+      properties:
+        detail: {type: string, example: 'Departure refused: the final-load CPM has not been processed yet'}
+  responses:
+    Flight:
+      description: Current flight snapshot, including delays and derived estimates.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/FlightFacts'}
+    Policy:
+      description: Current operational settings.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/OperationsPolicy'}
+    BadRequest:
+      description: Invalid input. Domain/JSON failures return ApiError; binding failures may use Spring's default error response.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Unauthenticated:
+      description: No authenticated session. Mutations with missing/invalid CSRF may instead return 403 before authentication is checked. No application error body is guaranteed.
+    Forbidden:
+      description: Insufficient role or missing/invalid CSRF token. No application error body is guaranteed.
+    NotFound:
+      description: Flight or delay does not exist.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Conflict:
+      description: Refused lifecycle change, frozen delay, excessive total delay, or concurrent update.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Unavailable:
+      description: Database unavailable; the requested change was not accepted.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
