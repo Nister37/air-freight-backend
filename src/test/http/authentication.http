@@ -1,0 +1,52 @@
+# Public local fixtures only. Start with the local profile and select an environment.
+# Run these requests in order. Re-run this file whenever switching accounts.
+
+### 1. Get the generated login form and a new unauthenticated session
+GET {{baseUrl}}/login
+Cookie: JSESSIONID=invalid-session
+
+> {%
+    client.test("Login form is available", function () { client.assert(response.status === 200); });
+    const token = response.body.match(/name="_csrf"[^>]*value="([^"]+)"/);
+    const cookie = response.headers.valuesOf("Set-Cookie").find(value => value.includes("JSESSIONID="));
+    client.assert(token && cookie, "Login form must supply CSRF and session values");
+    client.global.set("csrfToken", token[1]);
+    client.global.set("sessionId", cookie.match(/JSESSIONID=([^;]+)/)[1]);
+    client.global.set("flightDate", new Date(Date.now() - 86400000).toISOString().slice(0, 10));
+%}
+
+### 2. Log in; keep the redirect response to capture the rotated session cookie
+# @no-redirect
+POST {{baseUrl}}/login
+Content-Type: application/x-www-form-urlencoded
+Cookie: JSESSIONID={{sessionId}}
+
+username={{username}}&password={{password}}&_csrf={{csrfToken}}
+
+> {%
+    client.test("Login succeeds", function () {
+        client.assert(response.status === 302);
+        client.assert(!response.headers.valueOf("Location").includes("error"));
+    });
+    const cookie = response.headers.valuesOf("Set-Cookie").find(value => value.includes("JSESSIONID="));
+    client.assert(cookie, "Login must rotate the session ID");
+    client.global.set("sessionId", cookie.match(/JSESSIONID=([^;]+)/)[1]);
+%}
+
+### 3. Get a fresh CSRF token after authentication
+GET {{baseUrl}}/login
+Cookie: JSESSIONID={{sessionId}}
+
+> {%
+    const token = response.body.match(/name="_csrf"[^>]*value="([^"]+)"/);
+    client.assert(response.status === 200 && token, "Fresh CSRF token is required");
+    client.global.set("csrfToken", token[1]);
+%}
+
+### 4. Confirm the authenticated session
+GET {{baseUrl}}/api/flights?date={{flightDate}}
+Cookie: JSESSIONID={{sessionId}}
+
+> {%
+    client.test("Authenticated flight query succeeds", function () { client.assert(response.status === 200); });
+%}

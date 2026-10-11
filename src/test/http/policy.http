@@ -1,0 +1,31 @@
+# Log in through authentication.http with the admin environment first.
+# Run all three requests in order to restore the original policy.
+
+### Read and save the current policy
+GET {{baseUrl}}/api/policy
+Cookie: JSESSIONID={{sessionId}}
+
+> {%
+    client.test("Policy is returned", function () { client.assert(response.status === 200); });
+    client.global.set("originalPolicy", JSON.stringify(response.body));
+%}
+
+### Update policy
+PUT {{baseUrl}}/api/policy
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{"offloadingConstraint":"SOFT","loadingWindowOpeningMinutes":600,"loadingWindowClosingMinutes":30,"maximumLateralWeightDifferencePercent":8,"flightRetentionDays":7,"actualTimeToleranceMinutes":10}
+
+> {% client.test("Admin updates policy", function () { client.assert(response.status === 200 && response.body.offloadingConstraint === "SOFT"); }); %}
+
+### Restore the saved policy
+PUT {{baseUrl}}/api/policy
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{{originalPolicy}}
+
+> {% client.test("Original policy is restored", function () { client.assert(response.status === 200); }); %}

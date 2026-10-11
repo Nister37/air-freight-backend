@@ -1,0 +1,63 @@
+# Log in through authentication.http with the planner environment first.
+# These requests intentionally fail and assert the expected status.
+
+### Unauthenticated query
+GET {{baseUrl}}/api/flights
+Cookie: JSESSIONID=invalid-session
+
+> {% client.test("Authentication is required", function () { client.assert(response.status === 401); }); %}
+
+### Mutation without CSRF
+POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
+Cookie: JSESSIONID={{sessionId}}
+Content-Type: application/json
+
+{"phase":"DEPARTURE","code":"93","minutes":10,"description":"Missing CSRF"}
+
+> {% client.test("CSRF is required", function () { client.assert(response.status === 403); }); %}
+
+### Invalid delay duration
+POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{"phase":"DEPARTURE","code":"93","minutes":0,"description":"Invalid duration"}
+
+> {% client.test("Invalid delay is rejected", function () { client.assert(response.status === 400); }); %}
+
+### Missing flight
+GET {{baseUrl}}/api/flights/HJ9999/{{flightDate}}/BRU
+Cookie: JSESSIONID={{sessionId}}
+
+> {% client.test("Missing flight returns 404", function () { client.assert(response.status === 404); }); %}
+
+### Departure without a final-load CPM
+POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/departure
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{"actualTime":"{{flightDate}}T10:00:00"}
+
+> {% client.test("Final load is required", function () { client.assert(response.status === 409); }); %}
+
+### Delay on a landed flight
+POST {{baseUrl}}/api/flights/HJ9003/{{flightDate}}/BRU/delays
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{"phase":"ARRIVAL","code":"93","minutes":10,"description":"Flight already landed"}
+
+> {% client.test("Landed delays are frozen", function () { client.assert(response.status === 409); }); %}
+
+### Policy update by a flight planner
+PUT {{baseUrl}}/api/policy
+Cookie: JSESSIONID={{sessionId}}
+X-CSRF-TOKEN: {{csrfToken}}
+Content-Type: application/json
+
+{"offloadingConstraint":"HARD","loadingWindowOpeningMinutes":720,"loadingWindowClosingMinutes":20,"maximumLateralWeightDifferencePercent":10,"flightRetentionDays":7,"actualTimeToleranceMinutes":5}
+
+> {% client.test("Policy update requires admin", function () { client.assert(response.status === 403); }); %}
