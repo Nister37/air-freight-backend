@@ -66,7 +66,7 @@ public record FloorPlan(List<Slot> rows, List<Slot> noseSlots, List<Slot> tailSl
             case LEFT, RIGHT -> {
                 List<Position> path = pathAlongSide(from.side(), rows.indexOf(from.slot()));
                 path.remove(0);   // the ULD's own position doesn't block itself
-                yield List.of(path);
+                yield List.of(List.copyOf(path));
             }
             case NOSE -> manoeuvre(0);
             case TAIL -> manoeuvre(rows.size() - 1);

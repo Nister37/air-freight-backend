@@ -76,22 +76,20 @@ public final class Load {
         checks.clear();
     }
 
-    public void book(ULD uld, LocalDateTime now){
+    // Adds a ULD to this load. Returns false (and changes nothing) if this ULD code is already booked:
+    // the spec says a second booking of the same code is ignored. Core logs it.
+    public boolean book(ULD uld, LocalDateTime now){
         Objects.requireNonNull(uld);
+        if (findUld(uld.code()).isPresent()) {
+            return false;
+        }
         requireOpen();
         if(loadingWindow.isClosedAt(now)){
             throw new IllegalStateException("Loading window closed at "+ loadingWindow.closesAt());
         }
-
-        Optional<ULD> exisiting = findUld(uld.code());
-        if(exisiting.isPresent()){
-            if(exisiting.get().hasSameDataAs(uld)){
-                return;
-            }
-            throw new  IllegalStateException("ULD " + uld.code().value() + " is already booked with different data");
-        }
         ulds.add(uld);
         checks.clear();
+        return true;
     }
 
     public ULDStatus statusOf(ULDCode code){
@@ -141,10 +139,12 @@ public final class Load {
 
     // CHECKS
     //Runs all load checks against current placements and stores the results. Read-only for the planner; doesn't block anything by itself.
-    public List<LoadCheck> check(LoadRules rules){
+    public List<LoadCheck> check(FloorPlan floorPlan, LoadRules rules){
+        Objects.requireNonNull(floorPlan);
         Objects.requireNonNull(rules);
         List<LoadCheck> results = List.of(
                 lateralBalanceCheck(rules),
+                offloadingCheck(floorPlan, rules),
                 notAllCargoLoadedCheck()
         );
         checks.clear();
@@ -152,25 +152,37 @@ public final class Load {
         return results;
     }
 
-    //left/right weight difference must stay within the policy's max percentage. NOSE/TAIL are centreline and ignored.
+    //Heavier side may carry at most (limit)% more than the lighter side. Only L/R positions count; nose/tail are centreline.
     private LoadCheck lateralBalanceCheck(LoadRules rules) {
         BigDecimal left = weightOnSide(Side.LEFT);
         BigDecimal right = weightOnSide(Side.RIGHT);
-        BigDecimal total = left.add(right);
+        BigDecimal heavier = left.max(right);
+        BigDecimal lighter = left.min(right);
 
-        if (total.signum() == 0) {
-            return LoadCheck.passed(CheckKind.LATERAL_BALANCE, Severity.HARD, "No lateral weight");
-        }
+        BigDecimal factor = BigDecimal.ONE.add(rules.maxLateralDifferencePercent().movePointLeft(2));
+        BigDecimal maxHeavier = lighter.multiply(factor);
 
-        BigDecimal differencePercent = left.subtract(right).abs()
-                .multiply(BigDecimal.valueOf(100))
-                .divide(total, 2, RoundingMode.HALF_UP);
-        String detail = "Lateral difference " + differencePercent + "% (max "
-                + rules.maxLateralDifferencePercent() + "%)";
+        String detail = "Left " + display(left) + " kg, right " + display(right) + " kg; heavier side may carry at most "
+                + display(maxHeavier) + " kg (limit " + rules.maxLateralDifferencePercent().toPlainString() + "%)";
 
-        return differencePercent.compareTo(rules.maxLateralDifferencePercent()) <= 0
+        return heavier.compareTo(maxHeavier) <= 0
                 ? LoadCheck.passed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail)
                 : LoadCheck.failed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail);
+    }
+
+    //Every placed ULD for this flight's destination must reach the door without passing a ULD for another destination.
+    //Severity comes from the policy (HARD by default, admin can make it SOFT).
+    private LoadCheck offloadingCheck(FloorPlan floorPlan, LoadRules rules) {
+        List<String> stuck = placements.stream()
+                .filter(p -> destinationOf(p.code()).equals(destinationAirport))
+                .filter(p -> !canBeUnloaded(p.position(), floorPlan))
+                .map(p -> p.code().value() + " on " + p.position().code())
+                .toList();
+        return stuck.isEmpty()
+                ? LoadCheck.passed(CheckKind.OFFLOADING, rules.offloadingSeverity(),
+                "All ULDs for " + destinationAirport.value() + " can be unloaded")
+                : LoadCheck.failed(CheckKind.OFFLOADING, rules.offloadingSeverity(),
+                "Blocked by ULDs for another destination: " + String.join(", ", stuck));
     }
 
     //Booked ULDs without a position stay behind. Always SOFT: the planner must confirm it before finalising.
@@ -188,14 +200,15 @@ public final class Load {
 
     //finalise
     //Locks the load: re-runs checks, refuses on HARD failures, requires confirmation for SOFT failures, then marks FINAL and records LoadFinalisedEvent.
-    public void finalise(boolean confirmWarnings, LoadRules rules, LocalDateTime now) {
+    public void finalise(boolean confirmWarnings, FloorPlan floorPlan, LoadRules rules, LocalDateTime now) {
+        Objects.requireNonNull(floorPlan);
         Objects.requireNonNull(rules);
         requireOpen();
         if (loadingWindow.isClosedAt(now)) {
             throw new IllegalStateException("Loading window closed at " + loadingWindow.closesAt());
         }
 
-        List<LoadCheck> results = check(rules);   // always re-run — never trust stored results
+        List<LoadCheck> results = check(floorPlan, rules);   // always re-run — never trust stored results
 
         List<String> blocking = results.stream().filter(LoadCheck::isBlocking).map(LoadCheck::explanation).toList();
         if (!blocking.isEmpty()) {
@@ -225,6 +238,23 @@ public final class Load {
                 .toList();
     }
 
+    // offloading helpers
+    //A ULD can be unloaded if at least ONE of its routes has no ULD for another destination on it.
+    private boolean canBeUnloaded(Position from, FloorPlan floorPlan) {
+        return floorPlan.routesToDoor(from).stream()
+                .anyMatch(route -> route.stream().noneMatch(this::holdsOtherDestination));
+    }
+
+    //Same-destination ULDs never block: they get unloaded first. Empty positions never block.
+    private boolean holdsOtherDestination(Position position) {
+        return placements.stream()
+                .filter(p -> p.position().equals(position))
+                .anyMatch(p -> !destinationOf(p.code()).equals(destinationAirport));
+    }
+
+    private Airport destinationOf(ULDCode code) {
+        return findUld(code).orElseThrow().destination();
+    }
 
     private BigDecimal weightOnSide(Side side) {
         return placements.stream()
@@ -233,6 +263,10 @@ public final class Load {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    // Rounding is for the report text only — comparisons always use the exact values.
+    private static String display(BigDecimal kg) {
+        return kg.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+    }
 
     private boolean isOccupied(Position position) {
         return placements.stream().anyMatch(p -> p.position().equals(position));

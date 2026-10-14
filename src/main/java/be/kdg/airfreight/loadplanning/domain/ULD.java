@@ -30,10 +30,7 @@ public final class ULD {
     public Airport destination(){
         return destination;
     }
-    boolean hasSameDataAs(ULD other){
-        return weight.toKg().compareTo(other.weight.toKg()) == 0
-                && destination.equals(other.destination);
-    }
+
     @Override
     public boolean equals(Object o) {
         return o instanceof ULD other && code.equals(other.code);

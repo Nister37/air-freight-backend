@@ -27,6 +27,7 @@ class LoadTest {
 
     private static final ULDCode CODE_A = new ULDCode("AKE11111AA");
     private static final ULDCode CODE_B = new ULDCode("AKE22222BB");
+    private static final ULDCode CODE_C = new ULDCode("AKE33333CC");
 
     private static final LoadRules SOFT_RULES = new LoadRules(Severity.SOFT, new BigDecimal("10"));
     private static final LoadRules HARD_RULES = new LoadRules(Severity.HARD, new BigDecimal("10"));
@@ -68,19 +69,33 @@ class LoadTest {
     }
 
     @Test
-    void bookingSameUldTwiceWithEquivalentWeightIsIdempotent() {
+    void firstBookingReturnsTrue() {
         Load load = openLoad();
-        load.book(uld(CODE_A, "1000", ATH), NOW);
-        load.book(uld(CODE_A, "1000.0", ATH), NOW);
-        assertThat(load.ulds()).hasSize(1);
+        assertThat(load.book(uld(CODE_A, "1000", ATH), NOW)).isTrue();
     }
 
     @Test
-    void bookingSameCodeWithDifferentWeightThrows() {
+    void duplicateBookingIsIgnoredEvenWithDifferentData() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        assertThatThrownBy(() -> load.book(uld(CODE_A, "2000", ATH), NOW))
-                .isInstanceOf(IllegalStateException.class);
+
+        boolean booked = load.book(uld(CODE_A, "2000", CDG), NOW);
+
+        assertThat(booked).isFalse();
+        assertThat(load.ulds()).singleElement().satisfies(u -> {
+            assertThat(u.weight().amount()).isEqualByComparingTo("1000");
+            assertThat(u.destination()).isEqualTo(ATH);
+        });
+    }
+
+    @Test
+    void duplicateBookingAfterFinaliseIsIgnoredInsteadOfFailing() {
+        Load load = openLoad();
+        load.book(uld(CODE_A, "1000", ATH), NOW);
+        load.place(CODE_A, N1, FLOOR_PLAN, NOW);
+        load.finalise(false, FLOOR_PLAN, SOFT_RULES, NOW);
+
+        assertThat(load.book(uld(CODE_A, "1000", ATH), NOW)).isFalse();
     }
 
     @Test
@@ -112,7 +127,8 @@ class LoadTest {
     void placingOnPositionAbsentFromFloorPlanThrows() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        Position unknown = new Position(Side.TAIL, new Slot("Z"));        assertThatThrownBy(() -> load.place(CODE_A, unknown, FLOOR_PLAN, NOW))
+        Position unknown = new Position(Side.TAIL, new Slot("Z"));
+        assertThatThrownBy(() -> load.place(CODE_A, unknown, FLOOR_PLAN, NOW))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -171,40 +187,166 @@ class LoadTest {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", CDG), NOW);
         load.place(CODE_A, N1, FLOOR_PLAN, NOW);
-        List<LoadCheck> checks = load.check(SOFT_RULES);
+        List<LoadCheck> checks = load.check(FLOOR_PLAN, SOFT_RULES);
         assertThat(checks).noneMatch(LoadCheck::isBlocking);
     }
 
     @Test
-    void lateralBalancePassesWhenDifferenceIsWithinLimit() {
+    void checkRunsAllThreeChecksInSpecOrder() {
         Load load = openLoad();
-        load.book(uld(CODE_A, "1000", ATH), NOW);
-        load.book(uld(CODE_B, "900", ATH), NOW);
-        load.place(CODE_A, L1, FLOOR_PLAN, NOW);
-        load.place(CODE_B, R1, FLOOR_PLAN, NOW);
-        List<LoadCheck> checks = load.check(SOFT_RULES);
-        assertThat(checks).filteredOn(c -> c.kind() == CheckKind.LATERAL_BALANCE)
-                .extracting(LoadCheck::result)
-                .containsExactly(Result.PASSED);
+        assertThat(load.check(FLOOR_PLAN, SOFT_RULES))
+                .extracting(LoadCheck::kind)
+                .containsExactly(CheckKind.LATERAL_BALANCE, CheckKind.OFFLOADING, CheckKind.NOT_ALL_CARGO_LOADED);
+    }
+
+    // lateral balance
+
+    private static LoadCheck lateralBalance(Load load) {
+        return load.check(FLOOR_PLAN, SOFT_RULES).stream()
+                .filter(c -> c.kind() == CheckKind.LATERAL_BALANCE).findFirst().orElseThrow();
+    }
+
+    private static Load loadWithLeftAndRight(ULD left, ULD right) {
+        Load load = openLoad();
+        load.book(left, NOW);
+        load.book(right, NOW);
+        load.place(left.code(), L1, FLOOR_PLAN, NOW);
+        load.place(right.code(), R1, FLOOR_PLAN, NOW);
+        return load;
     }
 
     @Test
-    void lateralBalanceFailsWhenDifferenceExceedsLimit() {
+    void lateralBalanceExactlyAtLimitPasses() {
+        Load load = loadWithLeftAndRight(uld(CODE_A, "1000", ATH), uld(CODE_B, "1100", ATH));
+        assertThat(lateralBalance(load).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void lateralBalanceJustOverLimitFails() {
+        Load load = loadWithLeftAndRight(uld(CODE_A, "1000", ATH), uld(CODE_B, "1101", ATH));
+        LoadCheck check = lateralBalance(load);
+        assertThat(check.result()).isEqualTo(Result.FAILED);
+        assertThat(check.isBlocking()).isTrue();
+    }
+
+    @Test
+    void lateralBalanceReportShowsBothSidesAndMaximum() {
+        Load load = loadWithLeftAndRight(uld(CODE_A, "1000", ATH), uld(CODE_B, "1101", ATH));
+        assertThat(lateralBalance(load).explanation())
+                .contains("1000", "1101", "1100", "kg");
+    }
+
+    @Test
+    void lateralBalanceConvertsPoundsBeforeComparing() {
+        ULD leftKg = uld(CODE_A, "1000", ATH);
+        ULD rightLb = ULD.of(CODE_B, new Weight(new BigDecimal("2425"), WeightUnit.LB), ATH); // ≈ 1099.96 kg
+        Load load = loadWithLeftAndRight(leftKg, rightLb);
+        assertThat(lateralBalance(load).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void lateralBalanceWithCargoOnOneSideOnlyFails() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        load.book(uld(CODE_B, "500", ATH), NOW);
         load.place(CODE_A, L1, FLOOR_PLAN, NOW);
-        load.place(CODE_B, R1, FLOOR_PLAN, NOW);
-        List<LoadCheck> checks = load.check(SOFT_RULES);
-        assertThat(checks).filteredOn(c -> c.kind() == CheckKind.LATERAL_BALANCE)
-                .extracting(LoadCheck::result)
-                .containsExactly(Result.FAILED);
+        assertThat(lateralBalance(load).result()).isEqualTo(Result.FAILED);
     }
+
+    @Test
+    void lateralBalanceIgnoresNoseAndTail() {
+        Load load = openLoad();
+        load.book(uld(CODE_A, "5000", ATH), NOW);
+        load.place(CODE_A, N1, FLOOR_PLAN, NOW);
+        assertThat(lateralBalance(load).result()).isEqualTo(Result.PASSED);
+    }
+
+    // offloading
+
+    private static LoadCheck offloading(Load load, LoadRules rules) {
+        return load.check(FLOOR_PLAN, rules).stream()
+                .filter(c -> c.kind() == CheckKind.OFFLOADING).findFirst().orElseThrow();
+    }
+
+    /** Books and places 1000 kg ULDs, given as triples: code, destination, position code. */
+    private static Load loadWith(Object... codeDestinationPosition) {
+        Load load = openLoad();
+        for (int i = 0; i < codeDestinationPosition.length; i += 3) {
+            ULDCode code = (ULDCode) codeDestinationPosition[i];
+            load.book(uld(code, "1000", (Airport) codeDestinationPosition[i + 1]), NOW);
+            load.place(code, FloorPlans.pos((String) codeDestinationPosition[i + 2]), FLOOR_PLAN, NOW);
+        }
+        return load;
+    }
+
+    @Test
+    void offloadingFailsWhenOtherDestinationIsOnTheRouteToTheDoor() {
+        Load load = loadWith(CODE_A, ATH, "TL", CODE_B, CDG, "SL");
+        LoadCheck check = offloading(load, HARD_RULES);
+        assertThat(check.result()).isEqualTo(Result.FAILED);
+        assertThat(check.explanation()).contains("AKE11111AA on TL");
+    }
+
+    @Test
+    void offloadingPassesWhenSameDestinationIsOnTheRoute() {
+        Load load = loadWith(CODE_A, ATH, "TL", CODE_B, ATH, "SL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void offloadingIgnoresBlockersOnTheOtherSide() {
+        Load load = loadWith(CODE_A, ATH, "TR", CODE_B, CDG, "SL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void offloadingFailsWhenRightSideUldIsBlockedAtTheDoor() {
+        Load load = loadWith(CODE_A, ATH, "TR", CODE_B, CDG, "RL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.FAILED);
+    }
+
+    @Test
+    void otherDestinationUldsAreNeverCheckedThemselves() {
+        Load load = loadWith(CODE_A, CDG, "TL", CODE_B, CDG, "SL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void noseFailsWhenEitherCPositionHoldsOtherDestination() {
+        Load load = loadWith(CODE_A, ATH, "A1", CODE_B, CDG, "CR");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.FAILED);
+    }
+
+    @Test
+    void noseCanUseTheOtherSideWhenOneRouteIsBlocked() {
+        Load load = loadWith(CODE_A, ATH, "A1", CODE_B, CDG, "DL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void tailFailsWhenBothRoutesAreBlocked() {
+        Load load = loadWith(CODE_A, ATH, "X", CODE_B, CDG, "SL", CODE_C, CDG, "SR");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.FAILED);
+    }
+
+    @Test
+    void tailPassesWhenOneRouteIsClear() {
+        Load load = loadWith(CODE_A, ATH, "X", CODE_B, CDG, "SL");
+        assertThat(offloading(load, HARD_RULES).result()).isEqualTo(Result.PASSED);
+    }
+
+    @Test
+    void offloadingSeverityFollowsThePolicy() {
+        Load load = loadWith(CODE_A, ATH, "TL", CODE_B, CDG, "SL");
+        assertThat(offloading(load, HARD_RULES).isBlocking()).isTrue();
+        assertThat(offloading(load, SOFT_RULES).isWarning()).isTrue();
+    }
+
+    // not all cargo loaded
 
     @Test
     void unplacedUldFailsNotAllCargoLoadedAsSoftEvenWithHardPolicy() {
         Load load = loadWithOneUnplacedUld();
-        List<LoadCheck> checks = load.check(HARD_RULES);
+        List<LoadCheck> checks = load.check(FLOOR_PLAN, HARD_RULES);
         LoadCheck notAllLoaded = checks.stream()
                 .filter(c -> c.kind() == CheckKind.NOT_ALL_CARGO_LOADED).findFirst().orElseThrow();
         assertThat(notAllLoaded.result()).isEqualTo(Result.FAILED);
@@ -216,7 +358,7 @@ class LoadTest {
     @Test
     void unplacedCargoWithoutConfirmationThrowsAndLeavesLoadOpen() {
         Load load = loadWithOneUnplacedUld();
-        assertThatThrownBy(() -> load.finalise(false, SOFT_RULES, NOW))
+        assertThatThrownBy(() -> load.finalise(false, FLOOR_PLAN, SOFT_RULES, NOW))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(load.status()).isEqualTo(LoadStatus.OPEN);
         assertThat(load.getDomainEvents()).isEmpty();
@@ -225,7 +367,7 @@ class LoadTest {
     @Test
     void confirmedUnplacedCargoFinalisesAndEmitsEventWithOnlyPlacedUlds() {
         Load load = loadWithOneUnplacedUld();
-        load.finalise(true, SOFT_RULES, NOW);
+        load.finalise(true, FLOOR_PLAN, SOFT_RULES, NOW);
         assertThat(load.status()).isEqualTo(LoadStatus.FINAL);
         assertThat(load.getDomainEvents()).hasSize(1);
         LoadFinalisedEvent event = (LoadFinalisedEvent) load.getDomainEvents().get(0);
@@ -237,7 +379,23 @@ class LoadTest {
     @Test
     void unplacedCargoCanBeConfirmedEvenWithHardOffloadingPolicy() {
         Load load = loadWithOneUnplacedUld();
-        load.finalise(true, HARD_RULES, NOW);
+        load.finalise(true, FLOOR_PLAN, HARD_RULES, NOW);
+        assertThat(load.status()).isEqualTo(LoadStatus.FINAL);
+    }
+
+    @Test
+    void hardOffloadingBlocksFinaliseEvenWithConfirmation() {
+        // ATH on the nose, CDG on both C positions (balanced, so lateral balance passes)
+        Load load = loadWith(CODE_A, ATH, "A1", CODE_B, CDG, "CL", CODE_C, CDG, "CR");
+        assertThatThrownBy(() -> load.finalise(true, FLOOR_PLAN, HARD_RULES, NOW))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(load.status()).isEqualTo(LoadStatus.OPEN);
+    }
+
+    @Test
+    void softOffloadingCanBeConfirmed() {
+        Load load = loadWith(CODE_A, ATH, "A1", CODE_B, CDG, "CL", CODE_C, CDG, "CR");
+        load.finalise(true, FLOOR_PLAN, SOFT_RULES, NOW);
         assertThat(load.status()).isEqualTo(LoadStatus.FINAL);
     }
 
@@ -246,7 +404,7 @@ class LoadTest {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
         load.place(CODE_A, N1, FLOOR_PLAN, NOW);
-        load.finalise(false, SOFT_RULES, NOW);
+        load.finalise(false, FLOOR_PLAN, SOFT_RULES, NOW);
         assertThatThrownBy(() -> load.place(CODE_A, L1, FLOOR_PLAN, NOW))
                 .isInstanceOf(IllegalStateException.class);
     }
@@ -254,7 +412,7 @@ class LoadTest {
     @Test
     void clearDomainEventsEmptiesEventListAfterFinalise() {
         Load load = loadWithOneUnplacedUld();
-        load.finalise(true, SOFT_RULES, NOW);
+        load.finalise(true, FLOOR_PLAN, SOFT_RULES, NOW);
         load.clearDomainEvents();
         assertThat(load.getDomainEvents()).isEmpty();
     }
@@ -287,7 +445,7 @@ class LoadTest {
     void updateFlightFactsClearsPreviouslyStoredChecks() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        load.check(SOFT_RULES);
+        load.check(FLOOR_PLAN, SOFT_RULES);
         assertThat(load.checks()).isNotEmpty();
         load.updateFlightFacts(ATH, REG, LoadingWindow.beforeDeparture(STD, 720, 20));
         assertThat(load.checks()).isEmpty();
