@@ -167,14 +167,12 @@ class LoadTest {
     // check
 
     @Test
-    void destinationMismatchProducesBlockingCheck() {
+    void uldWithAnotherDestinationIsAllowedOnBoard() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", CDG), NOW);
-        load.place(CODE_A, L1, FLOOR_PLAN, NOW);
+        load.place(CODE_A, N1, FLOOR_PLAN, NOW);
         List<LoadCheck> checks = load.check(SOFT_RULES);
-        assertThat(checks).filteredOn(c -> c.kind() == CheckKind.DESTINATION_MATCH)
-                .extracting(LoadCheck::isBlocking)
-                .containsExactly(true);
+        assertThat(checks).noneMatch(LoadCheck::isBlocking);
     }
 
     @Test
@@ -204,18 +202,19 @@ class LoadTest {
     }
 
     @Test
-    void unplacedUldProducesOffloadingFailedWithRulesSeverity() {
+    void unplacedUldFailsNotAllCargoLoadedAsSoftEvenWithHardPolicy() {
         Load load = loadWithOneUnplacedUld();
-        List<LoadCheck> checks = load.check(SOFT_RULES);
-        LoadCheck offloading = checks.stream().filter(c -> c.kind() == CheckKind.OFFLOADING).findFirst().orElseThrow();
-        assertThat(offloading.result()).isEqualTo(Result.FAILED);
-        assertThat(offloading.severity()).isEqualTo(Severity.SOFT);
+        List<LoadCheck> checks = load.check(HARD_RULES);
+        LoadCheck notAllLoaded = checks.stream()
+                .filter(c -> c.kind() == CheckKind.NOT_ALL_CARGO_LOADED).findFirst().orElseThrow();
+        assertThat(notAllLoaded.result()).isEqualTo(Result.FAILED);
+        assertThat(notAllLoaded.severity()).isEqualTo(Severity.SOFT);
     }
 
     // finalise
 
     @Test
-    void softOffloadingWithoutConfirmationThrowsAndLeavesLoadOpen() {
+    void unplacedCargoWithoutConfirmationThrowsAndLeavesLoadOpen() {
         Load load = loadWithOneUnplacedUld();
         assertThatThrownBy(() -> load.finalise(false, SOFT_RULES, NOW))
                 .isInstanceOf(IllegalStateException.class);
@@ -224,7 +223,7 @@ class LoadTest {
     }
 
     @Test
-    void softOffloadingWithConfirmationFinalisesAndEmitsEventWithOnlyPlacedUlds() {
+    void confirmedUnplacedCargoFinalisesAndEmitsEventWithOnlyPlacedUlds() {
         Load load = loadWithOneUnplacedUld();
         load.finalise(true, SOFT_RULES, NOW);
         assertThat(load.status()).isEqualTo(LoadStatus.FINAL);
@@ -236,10 +235,10 @@ class LoadTest {
     }
 
     @Test
-    void hardOffloadingBlocksFinaliseEvenWithConfirmation() {
+    void unplacedCargoCanBeConfirmedEvenWithHardOffloadingPolicy() {
         Load load = loadWithOneUnplacedUld();
-        assertThatThrownBy(() -> load.finalise(true, HARD_RULES, NOW))
-                .isInstanceOf(IllegalStateException.class);
+        load.finalise(true, HARD_RULES, NOW);
+        assertThat(load.status()).isEqualTo(LoadStatus.FINAL);
     }
 
     @Test

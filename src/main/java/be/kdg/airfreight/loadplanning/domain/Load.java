@@ -44,14 +44,14 @@ public final class Load {
         this.checks = new ArrayList<>(checks);
     }
 
-//    new load for completly new flight
+    //    new load for completly new flight
     public static Load open(LoadId loadId, FlightId flightId, AircraftRegistration aircraftRegistration,
                             Airport destinationAirport, LoadingWindow loadingWindow) {
         return new Load(loadId, flightId, aircraftRegistration, destinationAirport, loadingWindow,
                 LoadStatus.OPEN, List.of(), List.of(), List.of());
     }
 
-//    rebuild from database
+    //    rebuild from database
     public static Load restore(LoadId loadId, FlightId flightId, AircraftRegistration aircraftRegistration,
                                Airport destinationAirport, LoadingWindow loadingWindow, LoadStatus status,
                                List<ULD> ulds, List<ULDPlacement> placements, List<LoadCheck> checks) {
@@ -103,7 +103,7 @@ public final class Load {
 
     // placing
     // Puts a booked ULD on a free position of this aircraft. Only while the load is OPEN and the loading window is open.
-        public void place(ULDCode code, Position position,FloorPlan floorPlan,LocalDateTime now){
+    public void place(ULDCode code, Position position,FloorPlan floorPlan,LocalDateTime now){
         Objects.requireNonNull(code);
         Objects.requireNonNull(position);
         Objects.requireNonNull(floorPlan);
@@ -144,25 +144,12 @@ public final class Load {
     public List<LoadCheck> check(LoadRules rules){
         Objects.requireNonNull(rules);
         List<LoadCheck> results = List.of(
-                destinationCheck(),
                 lateralBalanceCheck(rules),
-                offloadingCheck(rules)
+                notAllCargoLoadedCheck()
         );
         checks.clear();
         checks.addAll(results);
         return results;
-    }
-    //every placed ULD must be going to this flight's destination.
-    private LoadCheck destinationCheck() {
-        List<String> wrong = placedUldObjects().stream()
-                .filter(u -> !u.destination().equals(destinationAirport))
-                .map(u -> u.code().value())
-                .toList();
-        return wrong.isEmpty()
-                ? LoadCheck.passed(CheckKind.DESTINATION_MATCH, Severity.HARD,
-                "All placed ULDs go to " + destinationAirport.value())
-                : LoadCheck.failed(CheckKind.DESTINATION_MATCH, Severity.HARD,
-                "Wrong destination: " + String.join(", ", wrong));
     }
 
     //left/right weight difference must stay within the policy's max percentage. NOSE/TAIL are centreline and ignored.
@@ -186,21 +173,21 @@ public final class Load {
                 : LoadCheck.failed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail);
     }
 
-    //Booked ULDs that aren't placed will be left behind. Severity (HARD/SOFT) comes from the policy.
-    private LoadCheck offloadingCheck(LoadRules rules) {
+    //Booked ULDs without a position stay behind. Always SOFT: the planner must confirm it before finalising.
+    private LoadCheck notAllCargoLoadedCheck() {
         List<String> unplaced = ulds.stream()
                 .filter(u -> !isPlaced(u.code()))
                 .map(u -> u.code().value())
                 .toList();
         return unplaced.isEmpty()
-                ? LoadCheck.passed(CheckKind.OFFLOADING, rules.offloadingSeverity(), "All booked ULDs are placed")
-                : LoadCheck.failed(CheckKind.OFFLOADING, rules.offloadingSeverity(),
-                "Will be offloaded: " + String.join(", ", unplaced));
+                ? LoadCheck.passed(CheckKind.NOT_ALL_CARGO_LOADED, Severity.SOFT, "All booked ULDs have a position")
+                : LoadCheck.failed(CheckKind.NOT_ALL_CARGO_LOADED, Severity.SOFT,
+                "No position, will stay behind: " + String.join(", ", unplaced));
     }
 
 
     //finalise
-   //Locks the load: re-runs checks, refuses on HARD failures, requires confirmation for SOFT failures, then marks FINAL and records LoadFinalisedEvent.
+    //Locks the load: re-runs checks, refuses on HARD failures, requires confirmation for SOFT failures, then marks FINAL and records LoadFinalisedEvent.
     public void finalise(boolean confirmWarnings, LoadRules rules, LocalDateTime now) {
         Objects.requireNonNull(rules);
         requireOpen();
@@ -244,10 +231,6 @@ public final class Load {
                 .filter(p -> p.position().side() == side)
                 .map(p -> findUld(p.code()).orElseThrow().weight().toKg())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private List<ULD> placedUldObjects() {
-        return ulds.stream().filter(u -> isPlaced(u.code())).toList();
     }
 
 
