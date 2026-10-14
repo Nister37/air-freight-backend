@@ -80,6 +80,7 @@ public final class Load {
     // the spec says a second booking of the same code is ignored. Core logs it.
     public boolean book(ULD uld, LocalDateTime now){
         Objects.requireNonNull(uld);
+        Objects.requireNonNull(now, "now is required");
         if (findUld(uld.code()).isPresent()) {
             return false;
         }
@@ -105,6 +106,7 @@ public final class Load {
         Objects.requireNonNull(code);
         Objects.requireNonNull(position);
         Objects.requireNonNull(floorPlan);
+        Objects.requireNonNull(now, "now is required");
         requireOpen();
         requireWindowOpen(now);
 
@@ -127,6 +129,7 @@ public final class Load {
     // Takes a ULD off its position; the ULD stays booked. Same window/status rules as place.
     public void removePlacement(ULDCode code, LocalDateTime now) {
         Objects.requireNonNull(code);
+        Objects.requireNonNull(now, "now is required");
         requireOpen();
         requireWindowOpen(now);
 
@@ -138,10 +141,14 @@ public final class Load {
     }
 
     // CHECKS
-    //Runs all load checks against current placements and stores the results. Read-only for the planner; doesn't block anything by itself.
-    public List<LoadCheck> check(FloorPlan floorPlan, LoadRules rules){
+    //Runs all load checks against current placements and stores the results. Only during the loading window.
+    //Read-only for the planner; doesn't block anything by itself.
+    public List<LoadCheck> check(FloorPlan floorPlan, LoadRules rules, LocalDateTime now){
         Objects.requireNonNull(floorPlan);
         Objects.requireNonNull(rules);
+        Objects.requireNonNull(now, "now is required");
+        requireWindowOpen(now);
+
         List<LoadCheck> results = List.of(
                 lateralBalanceCheck(rules),
                 offloadingCheck(floorPlan, rules),
@@ -203,12 +210,11 @@ public final class Load {
     public void finalise(boolean confirmWarnings, FloorPlan floorPlan, LoadRules rules, LocalDateTime now) {
         Objects.requireNonNull(floorPlan);
         Objects.requireNonNull(rules);
+        Objects.requireNonNull(now, "now is required");
         requireOpen();
-        if (loadingWindow.isClosedAt(now)) {
-            throw new IllegalStateException("Loading window closed at " + loadingWindow.closesAt());
-        }
+        requireWindowOpen(now);
 
-        List<LoadCheck> results = check(floorPlan, rules);   // always re-run — never trust stored results
+        List<LoadCheck> results = check(floorPlan, rules, now);   // always re-run — never trust stored results
 
         List<String> blocking = results.stream().filter(LoadCheck::isBlocking).map(LoadCheck::explanation).toList();
         if (!blocking.isEmpty()) {

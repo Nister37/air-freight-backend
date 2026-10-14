@@ -187,14 +187,14 @@ class LoadTest {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", CDG), NOW);
         load.place(CODE_A, N1, FLOOR_PLAN, NOW);
-        List<LoadCheck> checks = load.check(FLOOR_PLAN, SOFT_RULES);
+        List<LoadCheck> checks = load.check(FLOOR_PLAN, SOFT_RULES, NOW);
         assertThat(checks).noneMatch(LoadCheck::isBlocking);
     }
 
     @Test
     void checkRunsAllThreeChecksInSpecOrder() {
         Load load = openLoad();
-        assertThat(load.check(FLOOR_PLAN, SOFT_RULES))
+        assertThat(load.check(FLOOR_PLAN, SOFT_RULES, NOW))
                 .extracting(LoadCheck::kind)
                 .containsExactly(CheckKind.LATERAL_BALANCE, CheckKind.OFFLOADING, CheckKind.NOT_ALL_CARGO_LOADED);
     }
@@ -202,7 +202,7 @@ class LoadTest {
     // lateral balance
 
     private static LoadCheck lateralBalance(Load load) {
-        return load.check(FLOOR_PLAN, SOFT_RULES).stream()
+        return load.check(FLOOR_PLAN, SOFT_RULES, NOW).stream()
                 .filter(c -> c.kind() == CheckKind.LATERAL_BALANCE).findFirst().orElseThrow();
     }
 
@@ -263,7 +263,7 @@ class LoadTest {
     // offloading
 
     private static LoadCheck offloading(Load load, LoadRules rules) {
-        return load.check(FLOOR_PLAN, rules).stream()
+        return load.check(FLOOR_PLAN, rules, NOW).stream()
                 .filter(c -> c.kind() == CheckKind.OFFLOADING).findFirst().orElseThrow();
     }
 
@@ -346,7 +346,7 @@ class LoadTest {
     @Test
     void unplacedUldFailsNotAllCargoLoadedAsSoftEvenWithHardPolicy() {
         Load load = loadWithOneUnplacedUld();
-        List<LoadCheck> checks = load.check(FLOOR_PLAN, HARD_RULES);
+        List<LoadCheck> checks = load.check(FLOOR_PLAN, HARD_RULES, NOW);
         LoadCheck notAllLoaded = checks.stream()
                 .filter(c -> c.kind() == CheckKind.NOT_ALL_CARGO_LOADED).findFirst().orElseThrow();
         assertThat(notAllLoaded.result()).isEqualTo(Result.FAILED);
@@ -445,7 +445,7 @@ class LoadTest {
     void updateFlightFactsClearsPreviouslyStoredChecks() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        load.check(FLOOR_PLAN, SOFT_RULES);
+        load.check(FLOOR_PLAN, SOFT_RULES, NOW);
         assertThat(load.checks()).isNotEmpty();
         load.updateFlightFacts(ATH, REG, LoadingWindow.beforeDeparture(STD, 720, 20));
         assertThat(load.checks()).isEmpty();
