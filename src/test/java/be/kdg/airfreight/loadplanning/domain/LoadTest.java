@@ -20,10 +20,10 @@ class LoadTest {
     private static final Airport ATH = new Airport("ATH");
     private static final Airport CDG = new Airport("CDG");
 
-    private static final Position L1 = new Position(Side.LEFT, new Slot("1"));
-    private static final Position R1 = new Position(Side.RIGHT, new Slot("1"));
-    private static final Position N1 = new Position(Side.NOSE, new Slot("1"));
-    private static final FloorPlan FLOOR_PLAN = new FloorPlan(L1, List.of(L1, R1, N1));
+    private static final Position L1 = FloorPlans.pos("CL");
+    private static final Position R1 = FloorPlans.pos("CR");
+    private static final Position N1 = FloorPlans.pos("A1");
+    private static final FloorPlan FLOOR_PLAN = FloorPlans.B747_400F;
 
     private static final ULDCode CODE_A = new ULDCode("AKE11111AA");
     private static final ULDCode CODE_B = new ULDCode("AKE22222BB");
@@ -112,8 +112,7 @@ class LoadTest {
     void placingOnPositionAbsentFromFloorPlanThrows() {
         Load load = openLoad();
         load.book(uld(CODE_A, "1000", ATH), NOW);
-        Position unknown = new Position(Side.TAIL, new Slot("9"));
-        assertThatThrownBy(() -> load.place(CODE_A, unknown, FLOOR_PLAN, NOW))
+        Position unknown = new Position(Side.TAIL, new Slot("Z"));        assertThatThrownBy(() -> load.place(CODE_A, unknown, FLOOR_PLAN, NOW))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
