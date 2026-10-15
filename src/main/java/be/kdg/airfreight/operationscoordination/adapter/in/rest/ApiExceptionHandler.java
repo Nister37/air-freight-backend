@@ -8,6 +8,7 @@ import org.springframework.dao.*;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
+import be.kdg.airfreight.loadplanning.LoadNotFoundException;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -18,6 +19,8 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> malformed(HttpMessageNotReadableException e) { return error(HttpStatus.BAD_REQUEST, "Invalid JSON or field value"); }
     @ExceptionHandler(FlightNotFoundException.class)
     ResponseEntity<ApiError> missingFlight(FlightNotFoundException e) { return error(HttpStatus.NOT_FOUND, e.getMessage()); }
+    @ExceptionHandler(LoadNotFoundException.class)
+    ResponseEntity<ApiError> loadNotFound(LoadNotFoundException e) { return error(HttpStatus.NOT_FOUND, e.getMessage()); }
     @ExceptionHandler(DelayNotFoundException.class)
     ResponseEntity<ApiError> missingDelay(DelayNotFoundException e) { return error(HttpStatus.NOT_FOUND, e.getMessage()); }
     @ExceptionHandler(IllegalStateException.class)
