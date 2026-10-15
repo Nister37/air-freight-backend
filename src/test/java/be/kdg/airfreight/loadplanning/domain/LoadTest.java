@@ -460,4 +460,12 @@ class LoadTest {
         assertThatThrownBy(() -> load.ulds().add(uld(CODE_B, "500", ATH)))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void checkingAFinalLoadThrows() {
+        Load load = loadWithOneUnplacedUld();
+        load.finalise(true, FLOOR_PLAN, SOFT_RULES, NOW);
+        assertThatThrownBy(() -> load.check(FLOOR_PLAN, SOFT_RULES, NOW))
+                .isInstanceOf(IllegalStateException.class);
+    }
 }

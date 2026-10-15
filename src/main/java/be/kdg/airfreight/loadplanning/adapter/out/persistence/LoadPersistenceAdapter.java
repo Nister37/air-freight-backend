@@ -14,6 +14,8 @@ import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.springframework.stereotype.Component;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 
 import java.util.*;
 import java.util.function.Function;
@@ -25,11 +27,15 @@ class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
     private final LoadJpaRepository loads;
     private final UldJpaRepository ulds;
     private final LoadCheckJpaRepository checks;
+    private final EntityManager entityManager;
 
-    LoadPersistenceAdapter(LoadJpaRepository loads, UldJpaRepository ulds, LoadCheckJpaRepository checks) {
+
+    LoadPersistenceAdapter(LoadJpaRepository loads, UldJpaRepository ulds, LoadCheckJpaRepository checks, EntityManager entityManager) {
         this.loads = loads;
         this.ulds = ulds;
         this.checks = checks;
+        this.entityManager = entityManager;
+
     }
 
     // ---------- LoadLoadPort ----------
@@ -45,7 +51,8 @@ class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
     public void update(Load load) {
         LoadJpaEntity entity = loads.findById(load.loadId().value()).orElseGet(LoadJpaEntity::new);
         updateEntity(entity, load);
-        loads.saveAndFlush(entity);
+        LoadJpaEntity saved = loads.saveAndFlush(entity);                     // parent row must exist before child rows reference it
+        entityManager.lock(saved, LockModeType.OPTIMISTIC_FORCE_INCREMENT);   // any change to the Load bumps its version
         syncUlds(load);
         replaceChecks(load);
     }

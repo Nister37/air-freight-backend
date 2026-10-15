@@ -150,6 +150,7 @@ public final class Load {
         Objects.requireNonNull(floorPlan);
         Objects.requireNonNull(rules);
         Objects.requireNonNull(now, "now is required");
+        requireOpen();
         requireWindowOpen(now);
 
         List<LoadCheck> results = List.of(
