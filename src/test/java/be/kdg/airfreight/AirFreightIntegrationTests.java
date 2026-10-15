@@ -4,7 +4,7 @@ import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.common.events.LoadFinalisedEvent;
 import be.kdg.airfreight.flightoperations.FlightNotFoundException;
 import be.kdg.airfreight.flightoperations.FlightOperationsApi;
-import be.kdg.airfreight.operationscoordination.LoadPlanningUnavailableException;
+import be.kdg.airfreight.loadplanning.LoadNotFoundException;
 import be.kdg.airfreight.operationscoordination.port.in.command.ScheduleFeedCommand;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.GetPolicyUseCase;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.RouteCargoFeedUseCase;
@@ -249,11 +249,33 @@ class AirFreightIntegrationTests {
     }
 
     @Test
-    void missingLoadImplementationRefusesBookingWithoutRecordingReceipt() {
+    void bookingForAnnouncedFlightIsAppliedAndRecordsReceipt() {
+        FlightFacts flight = flights.announceFlights(
+                schedule(NOW.toLocalDate().plusDays(1), "HJ" + NUMBER.incrementAndGet())).getFirst();
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(jdbc.queryForObject("select count(*) from lp_load where flight_id = ?",
+                        Long.class, flight.id().key())).isOne());
+
         UUID messageId = UUID.randomUUID();
-        CargoBooking booking = new CargoBooking(messageId, createFlight().id(), "AKE16689R7", new BigDecimal("1000"), "KG", new Airport("ATH"));
-        assertThatThrownBy(() -> cargo.routeCargoFeed(booking)).isInstanceOf(LoadPlanningUnavailableException.class);
-        assertThat(jdbc.queryForObject("select count(*) from oc_feed_receipt where message_id = ?", Long.class, messageId)).isZero();
+        cargo.routeCargoFeed(new CargoBooking(messageId, flight.id(), "AKE16689R7",
+                new BigDecimal("1000"), "KG", new Airport("ATH")));
+
+        assertThat(jdbc.queryForObject("select count(*) from oc_feed_receipt where message_id = ?",
+                Long.class, messageId)).isOne();
+        assertThat(jdbc.queryForObject("select count(*) from lp_uld where uld_code = ?",
+                Long.class, "AKE16689R7")).isOne();
+    }
+
+    @Test
+    void bookingForFlightWithoutLoadIsRefusedWithoutRecordingReceipt() {
+        UUID messageId = UUID.randomUUID();
+        FlightId unknownFlight = new FlightId(new FlightNumber("HJ" + NUMBER.incrementAndGet()), DATE, new Airport("BRU"));
+        CargoBooking booking = new CargoBooking(messageId, unknownFlight, "AKE16690R7",
+                new BigDecimal("1000"), "KG", new Airport("ATH"));
+
+        assertThatThrownBy(() -> cargo.routeCargoFeed(booking)).isInstanceOf(LoadNotFoundException.class);
+        assertThat(jdbc.queryForObject("select count(*) from oc_feed_receipt where message_id = ?",
+                Long.class, messageId)).isZero();
     }
 
     @Test

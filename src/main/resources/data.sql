@@ -43,3 +43,13 @@ SELECT 'HJ9003/' || CAST(CURRENT_DATE - INTERVAL '1' DAY AS DATE) || '/BRU', 0, 
        CAST(CURRENT_DATE AS TIMESTAMP) - INTERVAL '1' DAY + INTERVAL '8' HOUR + INTERVAL '3' MINUTE, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM fo_flight WHERE id =
     'HJ9003/' || CAST(CURRENT_DATE - INTERVAL '1' DAY AS DATE) || '/BRU');
+
+-- Load Planning aircraft catalogue: the airline operates one type, the Boeing 747-400 freighter (main deck).
+-- Rows nose to tail, nose and tail single positions, cargo door on the left of row R.
+INSERT INTO lp_aircraft_type (type_code, row_slots, nose_slots, tail_slots, door_row)
+SELECT 'B744F', 'C,D,E,F,G,H,J,K,L,M,P,R,S,T,U', 'A1,A2,B1', 'X', 'R'
+    WHERE NOT EXISTS (SELECT 1 FROM lp_aircraft_type WHERE type_code = 'B744F');
+
+INSERT INTO lp_aircraft (registration, type_code)
+SELECT 'SXBAA', 'B744F'
+    WHERE NOT EXISTS (SELECT 1 FROM lp_aircraft WHERE registration = 'SXBAA');
