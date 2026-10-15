@@ -6,6 +6,9 @@ import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.events.DomainEvent;
 import be.kdg.airfreight.common.PlacedUld;
 import be.kdg.airfreight.common.events.LoadFinalisedEvent;
+import be.kdg.airfreight.common.LoadCheckDetails;
+import be.kdg.airfreight.common.LoadFacts;
+import be.kdg.airfreight.common.UldDetails;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -298,6 +301,33 @@ public final class Load {
 
     private boolean isPlaced(ULDCode code) {
         return placements.stream().anyMatch(p -> p.code().equals(code));
+    }
+
+    private Optional<Position> positionOf(ULDCode code) {
+        return placements.stream().filter(p -> p.code().equals(code)).map(ULDPlacement::position).findFirst();
+    }
+
+    public LoadFacts facts(){
+        List<UldDetails> uldDetails = ulds.stream()
+                .map(u -> new UldDetails(
+                        u.code().value(),
+                        u.weight().amount(),
+                        u.weight().unit().name(),
+                        u.destination(),
+                        positionOf(u.code()).map(Position::code).orElse(null)))   // null = booked, not placed
+                .toList();
+
+        List<LoadCheckDetails> checkDetails = checks.stream()
+                .map(c -> new LoadCheckDetails(
+                        c.kind().name(),
+                        c.severity().name(),
+                        c.result() == Result.PASSED,
+                        c.explanation()))
+                .toList();
+
+        return new LoadFacts(flightId, aircraftRegistration, destinationAirport,
+                loadingWindow.opensAt(), loadingWindow.closesAt(),
+                status == LoadStatus.FINAL, uldDetails, checkDetails);
     }
 
 
