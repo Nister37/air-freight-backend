@@ -4,6 +4,6 @@ import be.kdg.airfreight.common.*;
 import java.time.*;
 import java.util.*;
 
-public interface GetPolicyUseCase extends PolicyQuery {
+public interface GetPolicyQuery extends PolicyQuery {
     OperationsPolicy currentPolicy();
 }

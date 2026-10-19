@@ -1,9 +1,10 @@
 package be.kdg.airfreight.operationscoordination.port.in.usecase;
 
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.operationscoordination.port.in.command.UpdatePolicyCommand;
 import java.time.*;
 import java.util.*;
 
 public interface UpdatePolicyUseCase {
-    OperationsPolicy updatePolicy(OperationsPolicy policy);
+    OperationsPolicy updatePolicy(UpdatePolicyCommand command);
 }

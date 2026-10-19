@@ -1,6 +1,7 @@
 package be.kdg.airfreight.operationscoordination.core;
 
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.operationscoordination.port.in.command.UpdatePolicyCommand;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.UpdatePolicyUseCase;
 import be.kdg.airfreight.operationscoordination.port.out.PolicyStorePort;
 import java.time.*;
@@ -17,5 +18,8 @@ class DefaultUpdatePolicyUseCase implements UpdatePolicyUseCase {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_admin')")
-    public OperationsPolicy updatePolicy(OperationsPolicy policy) { store.save(policy); return policy; }
+    public OperationsPolicy updatePolicy(UpdatePolicyCommand command) {
+        store.save(command.policy());
+        return command.policy();
+    }
 }

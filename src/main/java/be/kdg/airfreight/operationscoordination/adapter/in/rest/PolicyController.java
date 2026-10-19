@@ -1,17 +1,17 @@
 package be.kdg.airfreight.operationscoordination.adapter.in.rest;
 
 import be.kdg.airfreight.common.OperationsPolicy;
-import be.kdg.airfreight.operationscoordination.port.in.usecase.GetPolicyUseCase;
+import be.kdg.airfreight.operationscoordination.port.in.usecase.GetPolicyQuery;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.UpdatePolicyUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/policy")
-class PolicyController {
-    private final GetPolicyUseCase getPolicy;
+public class PolicyController {
+    private final GetPolicyQuery getPolicy;
     private final UpdatePolicyUseCase updatePolicy;
-    PolicyController(GetPolicyUseCase getPolicy, UpdatePolicyUseCase updatePolicy) {
+    PolicyController(GetPolicyQuery getPolicy, UpdatePolicyUseCase updatePolicy) {
         this.getPolicy = getPolicy;
         this.updatePolicy = updatePolicy;
     }
@@ -20,5 +20,5 @@ class PolicyController {
     OperationsPolicy get() { return getPolicy.currentPolicy(); }
     @PutMapping
     @PreAuthorize("hasAuthority('ROLE_admin')")
-    OperationsPolicy update(@RequestBody OperationsPolicy request) { return updatePolicy.updatePolicy(request); }
+    OperationsPolicy update(@RequestBody UpdatePolicyRequest request) { return updatePolicy.updatePolicy(request.toCommand()); }
 }
