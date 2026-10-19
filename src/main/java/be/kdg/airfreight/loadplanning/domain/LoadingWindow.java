@@ -13,7 +13,12 @@ public record LoadingWindow(LocalDateTime opensAt, LocalDateTime closesAt) {
     }
 
     public static LoadingWindow beforeDeparture(LocalDateTime departure, int openingMinutes, int closingMinutes) {
-        return new LoadingWindow(departure.minusMinutes(openingMinutes), departure.minusMinutes(closingMinutes));
+        return beforeDeparture(departure, departure, openingMinutes, closingMinutes);
+    }
+
+    public static LoadingWindow beforeDeparture(LocalDateTime scheduledDeparture, LocalDateTime estimatedDeparture,
+                                                int openingMinutes, int closingMinutes) {
+        return new LoadingWindow(scheduledDeparture.minusMinutes(openingMinutes), estimatedDeparture.minusMinutes(closingMinutes));
     }
 
     public boolean isOpenAt(LocalDateTime now) {

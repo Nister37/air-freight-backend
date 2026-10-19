@@ -2,24 +2,24 @@ package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadUseCase;
+import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
 @Transactional(readOnly = true)
-class DefaultGetLoadUseCase implements GetLoadUseCase {
+class DefaultGetLoadQuery implements GetLoadQuery {
 
-    private final LoadLookup loadLookup;
+    private final LoadReader loadReader;
 
-    DefaultGetLoadUseCase(LoadLookup loadLookup) {
-        this.loadLookup = loadLookup;
+    DefaultGetLoadQuery(LoadReader loadReader) {
+        this.loadReader = loadReader;
     }
 
     @Override
     public LoadFacts getLoad(FlightId id){
-        return loadLookup.required(id).facts();
+        return loadReader.required(id).facts();
     }
 
 }

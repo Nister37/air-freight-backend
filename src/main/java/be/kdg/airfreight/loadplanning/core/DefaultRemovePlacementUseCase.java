@@ -1,6 +1,11 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.LoadFacts;
+import be.kdg.airfreight.common.PolicyQuery;
+import be.kdg.airfreight.loadplanning.domain.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.Severity;
+import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.ULDCode;
 import be.kdg.airfreight.loadplanning.port.in.command.RemovePlacementCommand;
@@ -20,17 +25,28 @@ class DefaultRemovePlacementUseCase implements RemovePlacementUseCase {
 
     private final LoadLookup loadLookup;
     private final List<LoadUpdatePort> updatePorts;
+    private final AircraftLoadPort aircraftPort;
+    private final PolicyQuery policyQuery;
 
-    DefaultRemovePlacementUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts) {
+    DefaultRemovePlacementUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts,
+                                 AircraftLoadPort aircraftPort, PolicyQuery policyQuery) {
         this.loadLookup = loadLookup;
         this.updatePorts = List.copyOf(updatePorts);
+        this.aircraftPort = aircraftPort;
+        this.policyQuery = policyQuery;
     }
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_load-planner')")
     public LoadFacts removePlacement(RemovePlacementCommand command) {
         Load load = loadLookup.required(command.flightId());
-        load.removePlacement(new ULDCode(command.uldCode()), LocalDateTime.now(ZoneOffset.UTC));
+        FloorPlan floorPlan = aircraftPort.floorPlanFor(load.aircraftRegistration())
+                .orElseThrow(() -> new IllegalStateException("No floor plan known for aircraft " + load.aircraftRegistration().value()));
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        load.removePlacement(new ULDCode(command.uldCode()), now);
+        var policy = policyQuery.currentPolicy();
+        load.check(floorPlan, new LoadRules(Severity.valueOf(policy.offloadingConstraint().name()),
+                policy.maximumLateralWeightDifferencePercent()), now);
         return save(load);
     }
 

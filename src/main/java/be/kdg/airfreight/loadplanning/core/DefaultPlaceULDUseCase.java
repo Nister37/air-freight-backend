@@ -1,6 +1,9 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.LoadFacts;
+import be.kdg.airfreight.common.PolicyQuery;
+import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.Severity;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.Position;
@@ -24,11 +27,14 @@ class DefaultPlaceULDUseCase implements PlaceULDUseCase {
     private final LoadLookup loadLookup;
     private final List<LoadUpdatePort> updatePorts;
     private final AircraftLoadPort aircraftPort;
+    private final PolicyQuery policyQuery;
 
-    DefaultPlaceULDUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts, AircraftLoadPort aircraftPort) {
+    DefaultPlaceULDUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts,
+                           AircraftLoadPort aircraftPort, PolicyQuery policyQuery) {
         this.loadLookup = loadLookup;
         this.updatePorts = List.copyOf(updatePorts);
         this.aircraftPort = aircraftPort;
+        this.policyQuery = policyQuery;
     }
 
     @Override
@@ -41,7 +47,11 @@ class DefaultPlaceULDUseCase implements PlaceULDUseCase {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Position " + command.position() + " does not exist on this aircraft"));
 
-        load.place(new ULDCode(command.uldCode()), position, floorPlan, LocalDateTime.now(ZoneOffset.UTC));
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        load.place(new ULDCode(command.uldCode()), position, floorPlan, now);
+        var policy = policyQuery.currentPolicy();
+        load.check(floorPlan, new LoadRules(Severity.valueOf(policy.offloadingConstraint().name()),
+                policy.maximumLateralWeightDifferencePercent()), now);
         return save(load);
     }
 

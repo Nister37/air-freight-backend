@@ -6,17 +6,13 @@ import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.events.DomainEvent;
 import be.kdg.airfreight.common.PlacedUld;
 import be.kdg.airfreight.common.events.LoadFinalisedEvent;
-import be.kdg.airfreight.common.LoadCheckDetails;
 import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.common.UldDetails;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 
 public final class Load {
@@ -68,6 +64,8 @@ public final class Load {
         if (status == LoadStatus.FINAL) {
             return;  //finalized load is history
         }
+        if (destination.equals(destinationAirport) && registration.equals(aircraftRegistration)
+                && window.equals(loadingWindow)) return;
         if(!registration.equals(aircraftRegistration)){
             placements.clear();  // if different aircraft -> different floor plan, old plan is meaningless
         }
@@ -128,6 +126,22 @@ public final class Load {
         placements.add(new ULDPlacement(code, position));
         checks.clear();
     }
+
+    public void move(ULDCode code, Position position, FloorPlan floorPlan, LocalDateTime now) {
+        Objects.requireNonNull(code);
+        Objects.requireNonNull(position);
+        Objects.requireNonNull(floorPlan);
+        Objects.requireNonNull(now, "now is required");
+        requireOpen();
+        requireWindowOpen(now);
+        ULDPlacement previous = placements.stream().filter(placement -> placement.code().equals(code)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("ULD " + code.value() + " is not placed"));
+        if (!floorPlan.contains(position)) throw new IllegalArgumentException("Position does not exist on this aircraft");
+        if (previous.position().equals(position)) return;
+        if (isOccupied(position)) throw new IllegalStateException("Position " + position.code() + " is already occupied");
+        placements.set(placements.indexOf(previous), new ULDPlacement(code, position));
+        checks.clear();
+    }
     // Takes a ULD off its position; the ULD stays booked. Same window/status rules as place.
     public void removePlacement(ULDCode code, LocalDateTime now) {
         Objects.requireNonNull(code);
@@ -152,61 +166,15 @@ public final class Load {
         requireOpen();
         requireWindowOpen(now);
 
-        List<LoadCheck> results = List.of(
-                lateralBalanceCheck(rules),
-                offloadingCheck(floorPlan, rules),
-                notAllCargoLoadedCheck()
-        );
+        List<LoadCheck> results = new LoadChecks(ulds, placements, destinationAirport).check(floorPlan, rules);
         checks.clear();
         checks.addAll(results);
         return results;
     }
 
-    //Heavier side may carry at most (limit)% more than the lighter side. Only L/R positions count; nose/tail are centreline.
-    private LoadCheck lateralBalanceCheck(LoadRules rules) {
-        BigDecimal left = weightOnSide(Side.LEFT);
-        BigDecimal right = weightOnSide(Side.RIGHT);
-        BigDecimal heavier = left.max(right);
-        BigDecimal lighter = left.min(right);
-
-        BigDecimal factor = BigDecimal.ONE.add(rules.maxLateralDifferencePercent().movePointLeft(2));
-        BigDecimal maxHeavier = lighter.multiply(factor);
-
-        String detail = "Left " + display(left) + " kg, right " + display(right) + " kg; heavier side may carry at most "
-                + display(maxHeavier) + " kg (limit " + rules.maxLateralDifferencePercent().toPlainString() + "%)";
-
-        return heavier.compareTo(maxHeavier) <= 0
-                ? LoadCheck.passed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail)
-                : LoadCheck.failed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail);
+    public List<OffloadingBlockage> blockages(FloorPlan floorPlan) {
+        return view().blockages(floorPlan);
     }
-
-    //Every placed ULD for this flight's destination must reach the door without passing a ULD for another destination.
-    //Severity comes from the policy (HARD by default, admin can make it SOFT).
-    private LoadCheck offloadingCheck(FloorPlan floorPlan, LoadRules rules) {
-        List<String> stuck = placements.stream()
-                .filter(p -> destinationOf(p.code()).equals(destinationAirport))
-                .filter(p -> !canBeUnloaded(p.position(), floorPlan))
-                .map(p -> p.code().value() + " on " + p.position().code())
-                .toList();
-        return stuck.isEmpty()
-                ? LoadCheck.passed(CheckKind.OFFLOADING, rules.offloadingSeverity(),
-                "All ULDs for " + destinationAirport.value() + " can be unloaded")
-                : LoadCheck.failed(CheckKind.OFFLOADING, rules.offloadingSeverity(),
-                "Blocked by ULDs for another destination: " + String.join(", ", stuck));
-    }
-
-    //Booked ULDs without a position stay behind. Always SOFT: the planner must confirm it before finalising.
-    private LoadCheck notAllCargoLoadedCheck() {
-        List<String> unplaced = ulds.stream()
-                .filter(u -> !isPlaced(u.code()))
-                .map(u -> u.code().value())
-                .toList();
-        return unplaced.isEmpty()
-                ? LoadCheck.passed(CheckKind.NOT_ALL_CARGO_LOADED, Severity.SOFT, "All booked ULDs have a position")
-                : LoadCheck.failed(CheckKind.NOT_ALL_CARGO_LOADED, Severity.SOFT,
-                "No position, will stay behind: " + String.join(", ", unplaced));
-    }
-
 
     //finalise
     //Locks the load: re-runs checks, refuses on HARD failures, requires confirmation for SOFT failures, then marks FINAL and records LoadFinalisedEvent.
@@ -247,36 +215,6 @@ public final class Load {
                 .toList();
     }
 
-    // offloading helpers
-    //A ULD can be unloaded if at least ONE of its routes has no ULD for another destination on it.
-    private boolean canBeUnloaded(Position from, FloorPlan floorPlan) {
-        return floorPlan.routesToDoor(from).stream()
-                .anyMatch(route -> route.stream().noneMatch(this::holdsOtherDestination));
-    }
-
-    //Same-destination ULDs never block: they get unloaded first. Empty positions never block.
-    private boolean holdsOtherDestination(Position position) {
-        return placements.stream()
-                .filter(p -> p.position().equals(position))
-                .anyMatch(p -> !destinationOf(p.code()).equals(destinationAirport));
-    }
-
-    private Airport destinationOf(ULDCode code) {
-        return findUld(code).orElseThrow().destination();
-    }
-
-    private BigDecimal weightOnSide(Side side) {
-        return placements.stream()
-                .filter(p -> p.position().side() == side)
-                .map(p -> findUld(p.code()).orElseThrow().weight().toKg())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    // Rounding is for the report text only — comparisons always use the exact values.
-    private static String display(BigDecimal kg) {
-        return kg.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
-    }
-
     private boolean isOccupied(Position position) {
         return placements.stream().anyMatch(p -> p.position().equals(position));
     }
@@ -303,33 +241,14 @@ public final class Load {
         return placements.stream().anyMatch(p -> p.code().equals(code));
     }
 
-    private Optional<Position> positionOf(ULDCode code) {
-        return placements.stream().filter(p -> p.code().equals(code)).map(ULDPlacement::position).findFirst();
+    public LoadFacts facts() {
+        return view().facts();
     }
 
-    public LoadFacts facts(){
-        List<UldDetails> uldDetails = ulds.stream()
-                .map(u -> new UldDetails(
-                        u.code().value(),
-                        u.weight().amount(),
-                        u.weight().unit().name(),
-                        u.destination(),
-                        positionOf(u.code()).map(Position::code).orElse(null)))   // null = booked, not placed
-                .toList();
-
-        List<LoadCheckDetails> checkDetails = checks.stream()
-                .map(c -> new LoadCheckDetails(
-                        c.kind().name(),
-                        c.severity().name(),
-                        c.result() == Result.PASSED,
-                        c.explanation()))
-                .toList();
-
-        return new LoadFacts(flightId, aircraftRegistration, destinationAirport,
-                loadingWindow.opensAt(), loadingWindow.closesAt(),
-                status == LoadStatus.FINAL, uldDetails, checkDetails);
+    public LoadView view() {
+        return new LoadView(flightId, aircraftRegistration, destinationAirport, loadingWindow, status,
+                ulds, placements, checks);
     }
-
 
     // DOMAIN EVENTS
     public List<DomainEvent> getDomainEvents(){

@@ -10,7 +10,7 @@ import be.kdg.airfreight.loadplanning.port.in.command.RemovePlacementCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.BookCargoUseCase;
 import be.kdg.airfreight.loadplanning.port.in.usecase.CheckLoadUseCase;
 import be.kdg.airfreight.loadplanning.port.in.usecase.FinaliseLoadUseCase;
-import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadUseCase;
+import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadQuery;
 import be.kdg.airfreight.loadplanning.port.in.usecase.PlaceULDUseCase;
 import be.kdg.airfreight.loadplanning.port.in.usecase.RemovePlacementUseCase;
 import org.springframework.stereotype.Component;
@@ -19,13 +19,13 @@ import org.springframework.stereotype.Component;
 class LoadPlanningApiAdapter implements LoadPlanningApi {
 
     private final BookCargoUseCase bookCargo;
-    private final GetLoadUseCase getLoad;
+    private final GetLoadQuery getLoad;
     private final PlaceULDUseCase placeULD;
     private final RemovePlacementUseCase removePlacement;
     private final CheckLoadUseCase checkLoad;
     private final FinaliseLoadUseCase finaliseLoad;
 
-    LoadPlanningApiAdapter(BookCargoUseCase bookCargo, GetLoadUseCase getLoad, PlaceULDUseCase placeULD,
+    LoadPlanningApiAdapter(BookCargoUseCase bookCargo, GetLoadQuery getLoad, PlaceULDUseCase placeULD,
                            RemovePlacementUseCase removePlacement, CheckLoadUseCase checkLoad,
                            FinaliseLoadUseCase finaliseLoad) {
         this.bookCargo = bookCargo;
