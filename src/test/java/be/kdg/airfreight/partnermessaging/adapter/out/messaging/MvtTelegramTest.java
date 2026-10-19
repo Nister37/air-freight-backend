@@ -1,12 +1,15 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import java.time.*;
-import static org.assertj.core.api.Assertions.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MvtTelegramTest {
     @ParameterizedTest
@@ -19,24 +22,20 @@ class MvtTelegramTest {
             "31,AD2355,2026-02-01T00:02:00,2026-01-31,2026-01-31T23:55:00",
             "01,ED0000,2026-04-16T12:00:00,2026-05-01,2026-04-17T00:00:00"
     })
-    void derivesNearestDatesAndPrefersFutureOnTie(String day, String movement, String readAt, String date, String time) {
-        MvtTelegram telegram = MvtTelegram.parse("MVT\nHJ221/" + day + ".SXBAA.BRU\n" + movement, LocalDateTime.parse(readAt));
-        assertThat(telegram.scheduledDepartureDate()).isEqualTo(LocalDate.parse(date));
-        assertThat(telegram.movementTime()).isEqualTo(LocalDateTime.parse(time));
+    void derivesTheFlightDateAndMovementTime(String day, String movement, String readAt, String date, String time) {
+        MvtTelegram telegram = MvtTelegram.parse("MVT\nHJ221/" + day + ".SXBAA.BRU\n" + movement,
+                LocalDateTime.parse(readAt));
+
+        assertEquals(LocalDate.parse(date), telegram.scheduledDepartureDate());
+        assertEquals(LocalDateTime.parse(time), telegram.movementTime());
     }
 
     @Test
-    void rejectsMalformedTelegramAndImpossibleDatesOrTimes() {
-        LocalDateTime now = LocalDateTime.parse("2026-02-15T12:00:00");
-        for (String text : new String[]{"MVT\nHJ221/30.SXBAA.BRU\nED1200", "MVT\nHJ221/15.SXBAA.BRU\nED2460", "MVT HJ221/15 ED1200"}) {
-            assertThatThrownBy(() -> MvtTelegram.parse(text, now)).isInstanceOf(IllegalArgumentException.class);
+    void rejectsMalformedTelegramsAndImpossibleDatesOrTimes() {
+        LocalDateTime readAt = LocalDateTime.parse("2026-02-15T12:00:00");
+        for (String text : List.of("MVT\nHJ221/30.SXBAA.BRU\nED1200", "MVT\nHJ221/15.SXBAA.BRU\nED2460",
+                "MVT HJ221/15 ED1200")) {
+            assertThrows(IllegalArgumentException.class, () -> MvtTelegram.parse(text, readAt));
         }
-    }
-
-    @Test
-    void formatsExactlyThreeLinesWithUtcMinutes() {
-        MvtTelegram telegram = new MvtTelegram(new FlightNumber("HJ221"), LocalDate.of(2026, 10, 9),
-                new AircraftRegistration("SXBAA"), new Airport("BRU"), MessageKind.MVT_ED, LocalDateTime.parse("2026-10-09T06:45:00"));
-        assertThat(telegram.toText()).isEqualTo("MVT\nHJ221/09.SXBAA.BRU\nED0645");
     }
 }

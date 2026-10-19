@@ -1,6 +1,7 @@
 package be.kdg.airfreight.operationscoordination.core;
 
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.operationscoordination.port.in.command.CargoFeedCommand;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.RouteCargoFeedUseCase;
 import be.kdg.airfreight.operationscoordination.port.out.*;
 import java.time.*;
@@ -22,11 +23,15 @@ class DefaultRouteCargoFeedUseCase implements RouteCargoFeedUseCase {
     }
 
     @Override
-    public void routeCargoFeed(CargoBooking booking) {
-        if (receipts.contains(booking.messageId())) {
-            LOGGER.info("Duplicate ULD message ignored: {}", booking.messageId());
+    public void routeCargoFeed(CargoFeedCommand command) {
+        if (receipts.contains(command.messageId())) {
+            LOGGER.info("Duplicate ULD message ignored: {}", command.messageId());
             return;
         }
+        // Resolve a day-only date once, after the receipt check, never again on redelivery.
+        CargoBooking booking = new CargoBooking(command.messageId(), new FlightId(command.flightNumber(),
+                command.departureDay().resolve(LocalDate.now(ZoneOffset.UTC)), command.departureAirport()),
+                command.uldCode(), command.weight(), command.unit(), command.destination());
         loads.bookCargo(booking);
         receipts.record(booking.messageId());
     }

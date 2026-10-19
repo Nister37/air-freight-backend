@@ -16,6 +16,6 @@ class CargoFeedListener {
     @RabbitListener(queues = FeedRabbitTopology.ULD_QUEUE, autoStartup = "${airfreight.feeds.cargo.enabled:false}")
     void receive(UldMessage payload, Message message) {
         LOGGER.info("Processing ULD message ID {}", message.getMessageProperties().getMessageId());
-        useCase.routeCargoFeed(payload.booking());
+        useCase.routeCargoFeed(payload.command());
     }
 }
