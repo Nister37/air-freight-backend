@@ -6,6 +6,7 @@ import be.kdg.airfreight.flightoperations.adapter.out.persistence.entity.FlightJ
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.DelayJpaRepository;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.FlightJpaRepository;
 import be.kdg.airfreight.flightoperations.domain.*;
+import be.kdg.airfreight.flightoperations.port.in.usecase.FlightSelection;
 import be.kdg.airfreight.flightoperations.port.out.*;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,14 @@ class FlightPersistenceAdapter implements FlightLoadPort, FlightUpdatePort {
         this.delays = delays;
     }
     public Optional<Flight> load(FlightId id) { return repository.findById(id.key()).map(this::toDomain); }
-    public List<Flight> loadAll() { return repository.findAll().stream().map(this::toDomain).toList(); }
+    public List<Flight> findFlights(FlightSelection selection) {
+        return repository.findFlights(selection.date(),
+                selection.number() == null ? null : selection.number().value(),
+                selection.departureAirport() == null ? null : selection.departureAirport().value(),
+                selection.arrivalAirport() == null ? null : selection.arrivalAirport().value(),
+                selection.status() == null ? null : selection.status().name())
+                .stream().map(this::toDomain).toList();
+    }
     public List<Flight> loadExpired(LocalDate date) {
         return repository.findByScheduledDepartureDateLessThanEqual(date).stream().map(this::toDomain).toList();
     }

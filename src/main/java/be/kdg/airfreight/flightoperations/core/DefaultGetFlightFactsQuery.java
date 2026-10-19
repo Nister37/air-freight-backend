@@ -1,16 +1,16 @@
 package be.kdg.airfreight.flightoperations.core;
 
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightFactsUseCase;
+import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightFactsQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
-class DefaultGetFlightFactsUseCase implements GetFlightFactsUseCase {
+class DefaultGetFlightFactsQuery implements GetFlightFactsQuery {
     private final FlightLookup flightLookup;
 
-    DefaultGetFlightFactsUseCase(FlightLookup flightLookup) {
+    DefaultGetFlightFactsQuery(FlightLookup flightLookup) {
         this.flightLookup = flightLookup;
     }
 

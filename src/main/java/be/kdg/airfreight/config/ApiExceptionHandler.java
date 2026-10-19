@@ -1,4 +1,4 @@
-package be.kdg.airfreight.operationscoordination.adapter.in.rest;
+package be.kdg.airfreight.config;
 
 import be.kdg.airfreight.operationscoordination.LoadPlanningUnavailableException;
 import be.kdg.airfreight.flightoperations.FlightNotFoundException;
@@ -9,6 +9,7 @@ import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 import be.kdg.airfreight.loadplanning.LoadNotFoundException;
+import org.springframework.amqp.AmqpException;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -34,10 +35,14 @@ class ApiExceptionHandler {
         LOGGER.error("Database operation failed", e);
         return error(HttpStatus.SERVICE_UNAVAILABLE, "Database unavailable; the change was not accepted");
     }
+    @ExceptionHandler(AmqpException.class)
+    ResponseEntity<ApiError> feedBrokerFailure(AmqpException e) {
+        LOGGER.error("Feed publication failed", e);
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "Feed broker unavailable; some records may already have been published");
+    }
     private ResponseEntity<ApiError> error(HttpStatus status, String detail) {
         LOGGER.warn("Request refused ({}): {}", status.value(), detail);
         return ResponseEntity.status(status).body(new ApiError(detail));
     }
 
-    record ApiError(String detail) { }
 }

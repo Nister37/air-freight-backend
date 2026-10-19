@@ -8,9 +8,9 @@ import be.kdg.airfreight.flightoperations.port.in.command.RegisterDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.command.RemoveDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.usecase.AnnounceFlightsUseCase;
 import be.kdg.airfreight.flightoperations.port.in.usecase.CorrectDelayUseCase;
-import be.kdg.airfreight.flightoperations.port.in.usecase.FlightExistsUseCase;
-import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightFactsUseCase;
-import be.kdg.airfreight.flightoperations.port.in.usecase.ListFlightsUseCase;
+import be.kdg.airfreight.flightoperations.port.in.usecase.FlightExistsQuery;
+import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightFactsQuery;
+import be.kdg.airfreight.flightoperations.port.in.usecase.ListFlightsQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.ProcessCPMUseCase;
 import be.kdg.airfreight.flightoperations.port.in.usecase.RecordArrivalUseCase;
 import be.kdg.airfreight.flightoperations.port.in.usecase.RecordDepartureUseCase;
@@ -29,9 +29,9 @@ class FlightOperationsApiAdapter implements FlightOperationsApi {
     private final RemoveDelayUseCase removeDelay;
     private final RecordDepartureUseCase recordDeparture;
     private final RecordArrivalUseCase recordArrival;
-    private final GetFlightFactsUseCase getFlightFacts;
-    private final FlightExistsUseCase flightExists;
-    private final ListFlightsUseCase listFlights;
+    private final GetFlightFactsQuery getFlightFacts;
+    private final FlightExistsQuery flightExists;
+    private final ListFlightsQuery listFlights;
     private final ProcessCPMUseCase processCPM;
     private final RemoveExpiredFlightsUseCase removeExpiredFlights;
 
@@ -42,9 +42,9 @@ class FlightOperationsApiAdapter implements FlightOperationsApi {
             RemoveDelayUseCase removeDelay,
             RecordDepartureUseCase recordDeparture,
             RecordArrivalUseCase recordArrival,
-            GetFlightFactsUseCase getFlightFacts,
-            FlightExistsUseCase flightExists,
-            ListFlightsUseCase listFlights,
+            GetFlightFactsQuery getFlightFacts,
+            FlightExistsQuery flightExists,
+            ListFlightsQuery listFlights,
             ProcessCPMUseCase processCPM,
             RemoveExpiredFlightsUseCase removeExpiredFlights) {
         this.announceFlights = announceFlights;

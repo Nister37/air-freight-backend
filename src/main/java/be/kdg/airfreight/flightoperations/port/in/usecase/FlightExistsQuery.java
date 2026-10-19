@@ -4,6 +4,6 @@ import be.kdg.airfreight.common.*;
 import java.time.*;
 import java.util.*;
 
-public interface ListFlightsUseCase {
-    List<FlightFacts> listFlights(LocalDate scheduledDepartureDate);
+public interface FlightExistsQuery {
+    boolean flightExists(FlightId id);
 }
