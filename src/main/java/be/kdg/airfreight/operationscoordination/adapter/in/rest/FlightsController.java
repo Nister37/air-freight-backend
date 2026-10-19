@@ -74,9 +74,17 @@ class FlightsController {
         return new FlightId(new FlightNumber(number), date, new Airport(airport));
     }
     record RegisterDelayRequest(DelayPhase phase, String code, int minutes, String description) {
-        RegisterDelayRequest { if (phase == null) throw new IllegalArgumentException("Delay phase is required"); }
+        RegisterDelayRequest {
+            if (phase == null) throw new IllegalArgumentException("Delay phase is required");
+            if (code == null) throw new IllegalArgumentException("Delay code is required");
+            if (description == null) throw new IllegalArgumentException("Delay description is required");
+        }
     }
-    record CorrectDelayRequest(int minutes, String description) { }
+    record CorrectDelayRequest(int minutes, String description) {
+        CorrectDelayRequest {
+            if (description == null) throw new IllegalArgumentException("Delay description is required");
+        }
+    }
     record ActualTimeRequest(LocalDateTime actualTime) {
         ActualTimeRequest { if (actualTime == null) throw new IllegalArgumentException("Actual UTC date and time is required"); }
     }

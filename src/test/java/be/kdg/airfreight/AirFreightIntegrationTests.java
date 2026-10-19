@@ -5,6 +5,7 @@ import be.kdg.airfreight.common.events.LoadFinalisedEvent;
 import be.kdg.airfreight.flightoperations.FlightNotFoundException;
 import be.kdg.airfreight.flightoperations.FlightOperationsApi;
 import be.kdg.airfreight.loadplanning.LoadNotFoundException;
+import be.kdg.airfreight.loadplanning.LoadPlanningApi;
 import be.kdg.airfreight.operationscoordination.port.in.command.ScheduleFeedCommand;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.GetPolicyUseCase;
 import be.kdg.airfreight.operationscoordination.port.in.usecase.RouteCargoFeedUseCase;
@@ -49,6 +50,7 @@ class AirFreightIntegrationTests {
     private static final LocalDate DATE = NOW.toLocalDate().minusDays(1);
     private static final AtomicInteger NUMBER = new AtomicInteger(100);
     @Autowired FlightOperationsApi flights;
+    @Autowired LoadPlanningApi loads;
     @Autowired RouteScheduleFeedUseCase schedules;
     @Autowired RouteCargoFeedUseCase cargo;
     @Autowired GetPolicyUseCase getPolicy;
@@ -276,6 +278,66 @@ class AirFreightIntegrationTests {
         assertThatThrownBy(() -> cargo.routeCargoFeed(booking)).isInstanceOf(LoadNotFoundException.class);
         assertThat(jdbc.queryForObject("select count(*) from oc_feed_receipt where message_id = ?",
                 Long.class, messageId)).isZero();
+    }
+
+    @Test
+    @WithMockUser(roles = {"flight-planner", "load-planner"})
+    void incompleteModuleApiRequestsAreRejectedBeforeLookingUpAggregates() {
+        FlightId unknown = new FlightId(new FlightNumber("HJ" + NUMBER.incrementAndGet()), DATE, new Airport("BRU"));
+        assertThatThrownBy(() -> flights.registerDelay(unknown, DelayPhase.DEPARTURE, null, 10, "Rotation"))
+                .isInstanceOf(NullPointerException.class).hasMessage("Delay code is required");
+        assertThatThrownBy(() -> flights.registerDelay(unknown, null, "93", 10, "Rotation"))
+                .isInstanceOf(NullPointerException.class).hasMessage("Delay phase is required");
+        assertThatThrownBy(() -> flights.registerDelay(unknown, DelayPhase.DEPARTURE, "93", 10, null))
+                .isInstanceOf(NullPointerException.class).hasMessage("Delay description is required");
+        assertThatThrownBy(() -> flights.correctDelay(unknown, null, 10, "Rotation"))
+                .isInstanceOf(NullPointerException.class).hasMessage("Delay ID is required");
+        assertThatThrownBy(() -> flights.removeDelay(unknown, null))
+                .isInstanceOf(NullPointerException.class).hasMessage("Delay ID is required");
+        assertThatThrownBy(() -> flights.recordDeparture(null, NOW))
+                .isInstanceOf(NullPointerException.class).hasMessage("Flight ID is required");
+        assertThatThrownBy(() -> flights.recordArrival(unknown, null))
+                .isInstanceOf(NullPointerException.class).hasMessage("Actual UTC date and time is required");
+        assertThatThrownBy(() -> loads.placeULD(unknown, null, "CL"))
+                .isInstanceOf(NullPointerException.class).hasMessage("ULD code is required");
+        assertThatThrownBy(() -> loads.placeULD(unknown, "AKE16689R7", null))
+                .isInstanceOf(NullPointerException.class).hasMessage("Position is required");
+        assertThatThrownBy(() -> loads.removePlacement(unknown, null))
+                .isInstanceOf(NullPointerException.class).hasMessage("ULD code is required");
+        assertThatThrownBy(() -> loads.finaliseLoad(null, false))
+                .isInstanceOf(NullPointerException.class).hasMessage("Flight ID is required");
+    }
+
+    @Test
+    void missingHttpFieldsRemainBadRequestsAndDoNotChangeTheFlight() throws Exception {
+        FlightFacts flight = createFlight();
+        String url = "/api/flights/" + flight.id().key();
+        for (String body : List.of(
+                """
+                {"phase":"DEPARTURE","minutes":10,"description":"Rotation"}
+                """,
+                """
+                {"phase":"DEPARTURE","code":"93","minutes":10}
+                """,
+                """
+                {"phase":null,"code":"93","minutes":10,"description":"Rotation"}
+                """)) {
+            mvc.perform(post(url + "/delays").with(user("planner").roles("flight-planner")).with(csrf())
+                    .contentType("application/json").content(body)).andExpect(status().isBadRequest());
+        }
+        mvc.perform(put(url + "/delays/" + UUID.randomUUID())
+                .with(user("planner").roles("flight-planner")).with(csrf())
+                .contentType("application/json").content("{\"minutes\":10}"))
+                .andExpect(status().isBadRequest());
+        for (String action : List.of("departure", "arrival")) {
+            mvc.perform(post(url + "/" + action).with(user("planner").roles("flight-planner")).with(csrf())
+                    .contentType("application/json").content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+        FlightFacts unchanged = flights.getFlightFacts(flight.id());
+        assertThat(unchanged.delays()).isEmpty();
+        assertThat(unchanged.actualDeparture()).isNull();
+        assertThat(unchanged.actualArrival()).isNull();
     }
 
     @Test
