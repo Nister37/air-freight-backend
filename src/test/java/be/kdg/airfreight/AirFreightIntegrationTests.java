@@ -61,12 +61,15 @@ class AirFreightIntegrationTests {
     @Autowired MockMvc mvc;
     @Autowired JsonMapper json;
     @Autowired FailedEventPublications failedPublications;
-    @MockitoBean RabbitTemplate rabbit;
+    @MockitoSpyBean(name = "rabbitTemplate") RabbitTemplate rabbit;
+    @MockitoSpyBean(name = "mvtRabbitTemplate") RabbitTemplate mvtRabbit;
     @MockitoSpyBean MessageStorePort messageStore;
 
     @BeforeEach
     void resetPolicy() {
         jdbc.update("delete from oc_policy");
+        doNothing().when(rabbit).send(anyString(), anyString(), any(Message.class), isNull());
+        doNothing().when(mvtRabbit).send(anyString(), anyString(), any(Message.class), isNull());
     }
 
     @AfterEach
@@ -223,7 +226,7 @@ class AirFreightIntegrationTests {
     @Test
     void partnerOutageKeepsPublicationForRetryWithTheSameMessageIdentityAndBody() {
         doThrow(new IllegalStateException("Broker unavailable")).doNothing()
-                .when(rabbit).send(anyString(), anyString(), any(Message.class));
+                .when(rabbit).send(anyString(), anyString(), any(Message.class), isNull());
         FlightFacts flight = createFlight();
         awaitMessages(flight.id(), "FLM", 1);
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(jdbc.queryForObject(
@@ -233,11 +236,42 @@ class AirFreightIntegrationTests {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(jdbc.queryForObject(
                 "select count(*) from event_publication", Long.class)).isZero());
         org.mockito.ArgumentCaptor<Message> messages = org.mockito.ArgumentCaptor.forClass(Message.class);
-        verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), messages.capture());
+        verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), messages.capture(), isNull());
         assertThat(messages.getAllValues().get(0).getBody()).isEqualTo(messages.getAllValues().get(1).getBody());
         assertThat(messages.getAllValues().get(0).getMessageProperties().getMessageId())
                 .isEqualTo(messages.getAllValues().get(1).getMessageProperties().getMessageId());
         assertThat(countMessages(flight.id(), "FLM")).isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser(roles = "flight-planner")
+    void telegramOutageRetriesTheSavedBodyAndMetadataThroughItsConverter() {
+        FlightFacts flight = createFlight();
+        awaitMessages(flight.id(), "FLM", 1);
+        doThrow(new IllegalStateException("Broker unavailable")).doNothing()
+                .when(mvtRabbit).send(anyString(), eq("mvt.ed"), any(Message.class), isNull());
+
+        flights.registerDelay(flight.id(), DelayPhase.DEPARTURE, "93", 30, "Aircraft rotation");
+        awaitMessages(flight.id(), "MVT_ED", 1);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(jdbc.queryForObject(
+                "select count(*) from event_publication where status = 'FAILED'", Long.class)).isPositive());
+
+        failedPublications.resubmit(ResubmissionOptions.defaults());
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(jdbc.queryForObject(
+                "select count(*) from event_publication", Long.class)).isZero());
+
+        org.mockito.ArgumentCaptor<Message> messages = org.mockito.ArgumentCaptor.forClass(Message.class);
+        verify(mvtRabbit, times(2)).send(eq("airfreight.partner-messages"), eq("mvt.ed"), messages.capture(), isNull());
+        Message first = messages.getAllValues().getFirst();
+        Message retry = messages.getAllValues().getLast();
+        String savedBody = jdbc.queryForObject("select body from pm_message where flight_key = ? and kind = 'MVT_ED'",
+                String.class, flight.id().key());
+        assertThat(new String(first.getBody(), java.nio.charset.StandardCharsets.UTF_8)).isEqualTo(savedBody);
+        assertThat(retry.getBody()).isEqualTo(first.getBody());
+        assertThat(retry.getMessageProperties().getMessageId()).isEqualTo(first.getMessageProperties().getMessageId());
+        assertThat(retry.getMessageProperties().getHeaders()).isEqualTo(first.getMessageProperties().getHeaders());
+        assertThat(retry.getMessageProperties().getContentType()).isEqualTo("text/plain");
+        assertThat(countMessages(flight.id(), "MVT_ED")).isEqualTo(1);
     }
 
     @Test

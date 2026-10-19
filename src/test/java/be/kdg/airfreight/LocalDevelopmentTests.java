@@ -30,7 +30,8 @@ class LocalDevelopmentTests {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired DataSource dataSource;
-    @MockitoBean RabbitTemplate rabbit;
+    @MockitoBean(name = "rabbitTemplate") RabbitTemplate rabbit;
+    @MockitoBean(name = "mvtRabbitTemplate") RabbitTemplate mvtRabbit;
 
     @Test
     void sampleDataCanBeReplayedWithoutOverwritingChanges() {

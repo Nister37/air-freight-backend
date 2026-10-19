@@ -6,18 +6,16 @@ import org.slf4j.*;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
 
 @Component
 class ScheduleFeedListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ScheduleFeedListener.class);
     private final RouteScheduleFeedUseCase useCase;
-    private final JsonMapper mapper;
-    ScheduleFeedListener(RouteScheduleFeedUseCase useCase, JsonMapper mapper) { this.useCase = useCase; this.mapper = mapper; }
+    ScheduleFeedListener(RouteScheduleFeedUseCase useCase) { this.useCase = useCase; }
 
     @RabbitListener(queues = FeedRabbitTopology.SSM_QUEUE)
-    void receive(Message message) {
+    void receive(SsmMessage payload, Message message) {
         LOGGER.info("Processing SSM message ID {}", message.getMessageProperties().getMessageId());
-        useCase.routeScheduleFeed(mapper.readValue(message.getBody(), SsmMessage.class).command());
+        useCase.routeScheduleFeed(payload.command());
     }
 }

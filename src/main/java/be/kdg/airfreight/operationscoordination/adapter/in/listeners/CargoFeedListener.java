@@ -6,18 +6,16 @@ import org.slf4j.*;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
 
 @Component
 class CargoFeedListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CargoFeedListener.class);
     private final RouteCargoFeedUseCase useCase;
-    private final JsonMapper mapper;
-    CargoFeedListener(RouteCargoFeedUseCase useCase, JsonMapper mapper) { this.useCase = useCase; this.mapper = mapper; }
+    CargoFeedListener(RouteCargoFeedUseCase useCase) { this.useCase = useCase; }
 
     @RabbitListener(queues = FeedRabbitTopology.ULD_QUEUE, autoStartup = "${airfreight.feeds.cargo.enabled:false}")
-    void receive(Message message) {
+    void receive(UldMessage payload, Message message) {
         LOGGER.info("Processing ULD message ID {}", message.getMessageProperties().getMessageId());
-        useCase.routeCargoFeed(mapper.readValue(message.getBody(), UldMessage.class).booking());
+        useCase.routeCargoFeed(payload.booking());
     }
 }

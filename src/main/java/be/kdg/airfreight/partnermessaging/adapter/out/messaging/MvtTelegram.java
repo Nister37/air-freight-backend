@@ -1,4 +1,4 @@
-package be.kdg.airfreight.partnermessaging.adapter.out.formatting;
+package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.partnermessaging.domain.MessageKind;
