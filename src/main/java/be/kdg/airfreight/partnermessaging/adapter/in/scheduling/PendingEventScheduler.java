@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 class PendingEventScheduler {
     private final FailedEventPublications publications;
     PendingEventScheduler(FailedEventPublications publications) { this.publications = publications; }
-    @Scheduled(fixedDelay = 30_000, initialDelay = 30_000)
+    @Scheduled(fixedDelayString = "${airfreight.messaging.retry-delay:30s}",
+            initialDelayString = "${airfreight.messaging.retry-delay:30s}")
     void retryFailedEvents() { publications.resubmit(ResubmissionOptions.defaults()); }
 }
