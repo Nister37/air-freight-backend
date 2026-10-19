@@ -57,7 +57,7 @@ services:
       KC_DB_PASSWORD: 'password'
     command: start-dev
     ports:
-      - '8180:8080'
+      - '8380:8080'
     depends_on:
       - idp_mysql
     networks:

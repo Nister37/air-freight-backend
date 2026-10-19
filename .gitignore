@@ -16,6 +16,8 @@ build/
 
 # Local environment settings
 .env
+src/test/http/http-client.private.env.json
+infrastructure/keycloak/private/
 
 # Build artifacts
 Lectures/
