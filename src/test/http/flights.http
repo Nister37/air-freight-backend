@@ -2,22 +2,33 @@
 # Delay requests can be repeated after completing their matching delete requests.
 # Departure and arrival are one-time operations for each daily HJ9002 fixture.
 
+### Default to today's flights, sorted by scheduled departure
+GET {{baseUrl}}/api/flights
+Authorization: Bearer {{accessToken}}
+
+> {% client.test("Today's flights are returned", function () { client.assert(response.status === 200); }); %}
+
+### Search with combined criteria
+GET {{baseUrl}}/api/flights?date={{flightDate}}&number=HJ9001&departureAirport=BRU&arrivalAirport=ATH&status=SCHEDULED
+Authorization: Bearer {{accessToken}}
+
+> {% client.test("Matching flights are returned", function () { client.assert(response.status === 200); }); %}
+
 ### List yesterday's sample flights
 GET {{baseUrl}}/api/flights?date={{flightDate}}
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer {{accessToken}}
 
 > {% client.test("Flights are returned", function () { client.assert(response.status === 200); }); %}
 
 ### Read the scheduled flight
 GET {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer {{accessToken}}
 
 > {% client.test("Scheduled fixture exists", function () { client.assert(response.status === 200 && response.body.status === "SCHEDULED"); }); %}
 
 ### Register a departure delay
 POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"phase":"DEPARTURE","code":"93","minutes":20,"description":"Aircraft rotation"}
@@ -30,8 +41,7 @@ Content-Type: application/json
 
 ### Register an arrival delay
 POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"phase":"ARRIVAL","code":"93","minutes":10,"description":"Arrival handling"}
@@ -44,8 +54,7 @@ Content-Type: application/json
 
 ### Correct the departure delay
 PUT {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays/{{departureDelayId}}
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"minutes":15,"description":"Updated aircraft rotation"}
@@ -54,21 +63,19 @@ Content-Type: application/json
 
 ### Remove the departure delay
 DELETE {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays/{{departureDelayId}}
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 
 > {% client.test("Departure delay is removed", function () { client.assert(response.status === 200); }); %}
 
 ### Remove the arrival delay
 DELETE {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays/{{arrivalDelayId}}
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 
 > {% client.test("Arrival delay is removed", function () { client.assert(response.status === 200); }); %}
 
 ### Read the ready flight and use its estimates as actual UTC times
 GET {{baseUrl}}/api/flights/HJ9002/{{flightDate}}/BRU
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer {{accessToken}}
 
 > {%
     client.test("Ready fixture has its final load", function () { client.assert(response.status === 200 && response.body.finalLoadReceived); });
@@ -78,8 +85,7 @@ Cookie: JSESSIONID={{sessionId}}
 
 ### Record departure (once per fixture)
 POST {{baseUrl}}/api/flights/HJ9002/{{flightDate}}/BRU/departure
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"actualTime":"{{actualDeparture}}"}
@@ -88,8 +94,7 @@ Content-Type: application/json
 
 ### Record arrival (once per fixture, after departure)
 POST {{baseUrl}}/api/flights/HJ9002/{{flightDate}}/BRU/arrival
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"actualTime":"{{actualArrival}}"}

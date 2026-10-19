@@ -1,0 +1,56 @@
+# Start RabbitMQ/PostgreSQL and run:
+# .\gradlew.bat bootRun --args="--spring.profiles.active=local,simulation"
+# Log in with the planner environment through authentication.http for the schedule request.
+# The response contains message IDs; processing happens asynchronously through RabbitMQ.
+
+### Publish one SSM for a schedule record (UTC, departure two hours from now)
+< {%
+    const departure = new Date(Date.now() + 2 * 3600000);
+    const arrival = new Date(departure.getTime() + 2 * 3600000);
+    const weekdays = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+    client.global.set("simFlightNumber", "HJ" + (1000 + Math.floor(Date.now() / 1000) % 9000));
+    client.global.set("simDate", departure.toISOString().slice(0, 10));
+    request.variables.set("weekday", weekdays[departure.getUTCDay()]);
+    request.variables.set("departureTime", departure.toISOString().slice(11, 19));
+    request.variables.set("arrivalTime", arrival.toISOString().slice(11, 19));
+%}
+POST {{baseUrl}}/api/simulation/schedules
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+[
+  {
+    "from": "{{simDate}}", "to": "{{simDate}}", "weekdays": ["{{weekday}}"],
+    "departureTime": "{{departureTime}}", "arrivalTime": "{{arrivalTime}}",
+    "flightNumber": "{{simFlightNumber}}", "departureAirport": "BRU", "arrivalAirport": "ATH",
+    "aircraftRegistration": "SXBAA"
+  }
+]
+
+> {% client.test("One SSM was submitted", function () { client.assert(response.status === 202 && response.body.length === 1); }); %}
+
+### Wait for this read to succeed before sending cargo (repeat if the async load is not ready)
+GET {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU
+Authorization: Bearer {{accessToken}}
+
+> {% client.test("The schedule has produced a load", function () { client.assert(response.status === 200); }); %}
+
+### Publish two ULD messages; switch to loader and rerun authentication.http first
+POST {{baseUrl}}/api/simulation/cargo-bookings
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+[
+  {
+    "flightNumber": "{{simFlightNumber}}", "scheduledDepartureDate": "{{simDate}}", "departureAirport": "BRU",
+    "uldCode": "AKE73001R7", "weight": 1000, "unit": "KG", "destination": "ATH"
+  },
+  {
+    "flightNumber": "{{simFlightNumber}}", "scheduledDepartureDate": "{{simDate}}", "departureAirport": "BRU",
+    "uldCode": "AKE73002R7", "weight": 1000, "unit": "KG", "destination": "ATH"
+  }
+]
+
+> {% client.test("One message per cargo record was submitted", function () { client.assert(response.status === 202 && response.body.length === 2); }); %}
+
+# Continue in loads.http after both ULDs appear on the load.

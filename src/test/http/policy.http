@@ -3,7 +3,7 @@
 
 ### Read and save the current policy
 GET {{baseUrl}}/api/policy
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer {{accessToken}}
 
 > {%
     client.test("Policy is returned", function () { client.assert(response.status === 200); });
@@ -12,8 +12,7 @@ Cookie: JSESSIONID={{sessionId}}
 
 ### Update policy
 PUT {{baseUrl}}/api/policy
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"offloadingConstraint":"SOFT","loadingWindowOpeningMinutes":600,"loadingWindowClosingMinutes":30,"maximumLateralWeightDifferencePercent":8,"flightRetentionDays":7,"actualTimeToleranceMinutes":10}
@@ -22,8 +21,7 @@ Content-Type: application/json
 
 ### Restore the saved policy
 PUT {{baseUrl}}/api/policy
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {{originalPolicy}}

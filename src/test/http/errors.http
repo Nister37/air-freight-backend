@@ -3,23 +3,30 @@
 
 ### Unauthenticated query
 GET {{baseUrl}}/api/flights
-Cookie: JSESSIONID=invalid-session
 
 > {% client.test("Authentication is required", function () { client.assert(response.status === 401); }); %}
 
-### Mutation without CSRF
+### Mutation with an invalid bearer token
 POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer invalid-token
 Content-Type: application/json
 
-{"phase":"DEPARTURE","code":"93","minutes":10,"description":"Missing CSRF"}
+{"phase":"DEPARTURE","code":"93","minutes":10,"description":"Invalid token"}
 
-> {% client.test("CSRF is required", function () { client.assert(response.status === 403); }); %}
+> {% client.test("Valid authentication is required", function () { client.assert(response.status === 401); }); %}
+
+### Invalid delay-code format
+POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{"phase":"DEPARTURE","code":"A1","minutes":10,"description":"Invalid format"}
+
+> {% client.test("Delay code must contain two digits", function () { client.assert(response.status === 400); }); %}
 
 ### Invalid delay duration
 POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/delays
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"phase":"DEPARTURE","code":"93","minutes":0,"description":"Invalid duration"}
@@ -28,14 +35,13 @@ Content-Type: application/json
 
 ### Missing flight
 GET {{baseUrl}}/api/flights/HJ9999/{{flightDate}}/BRU
-Cookie: JSESSIONID={{sessionId}}
+Authorization: Bearer {{accessToken}}
 
 > {% client.test("Missing flight returns 404", function () { client.assert(response.status === 404); }); %}
 
 ### Departure without a final-load CPM
 POST {{baseUrl}}/api/flights/HJ9001/{{flightDate}}/BRU/departure
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"actualTime":"{{flightDate}}T10:00:00"}
@@ -44,8 +50,7 @@ Content-Type: application/json
 
 ### Delay on a landed flight
 POST {{baseUrl}}/api/flights/HJ9003/{{flightDate}}/BRU/delays
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"phase":"ARRIVAL","code":"93","minutes":10,"description":"Flight already landed"}
@@ -54,8 +59,7 @@ Content-Type: application/json
 
 ### Policy update by a flight planner
 PUT {{baseUrl}}/api/policy
-Cookie: JSESSIONID={{sessionId}}
-X-CSRF-TOKEN: {{csrfToken}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {"offloadingConstraint":"HARD","loadingWindowOpeningMinutes":720,"loadingWindowClosingMinutes":20,"maximumLateralWeightDifferencePercent":10,"flightRetentionDays":7,"actualTimeToleranceMinutes":5}
