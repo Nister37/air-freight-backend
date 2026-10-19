@@ -13,6 +13,7 @@ import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.UldJpaR
 import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -22,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@Order(1)
 class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
 
     private final LoadJpaRepository loads;
@@ -121,13 +123,7 @@ class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
     }
 
     private static LoadCheckJpaEntity toEntity(UUID loadId, LoadCheck check) {
-        LoadCheckJpaEntity row = new LoadCheckJpaEntity();
-        row.setLoadId(loadId);
-        row.setKind(check.kind());
-        row.setSeverity(check.severity());
-        row.setResult(check.result());
-        row.setExplanation(check.explanation());
-        return row;
+        return new LoadCheckJpaEntity(loadId, check.kind(), check.severity(), check.result(), check.explanation());
     }
 
     // ---------- rows → Load ----------

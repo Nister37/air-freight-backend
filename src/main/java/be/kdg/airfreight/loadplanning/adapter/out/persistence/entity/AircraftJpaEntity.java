@@ -14,6 +14,5 @@ public class AircraftJpaEntity {
 
     protected AircraftJpaEntity() { }
 
-    public String getRegistration() { return registration; }
     public String getTypeCode() { return typeCode; }
 }

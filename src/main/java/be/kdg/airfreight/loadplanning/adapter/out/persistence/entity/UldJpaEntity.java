@@ -38,8 +38,6 @@ public class UldJpaEntity {
 
     public UldJpaEntity() { }
 
-    public Long getId() { return id; }
-    public UUID getLoadId() { return loadId; }
     public void setLoadId(UUID loadId) { this.loadId = loadId; }
     public String getUldCode() { return uldCode; }
     public void setUldCode(String uldCode) { this.uldCode = uldCode; }

@@ -33,17 +33,18 @@ public class LoadCheckJpaEntity {
     @Column(nullable = false, length = 4000)
     private String explanation;
 
-    public LoadCheckJpaEntity() { }
+    protected LoadCheckJpaEntity() { }
 
-    public Long getId() { return id; }
-    public UUID getLoadId() { return loadId; }
-    public void setLoadId(UUID loadId) { this.loadId = loadId; }
+    public LoadCheckJpaEntity(UUID loadId, CheckKind kind, Severity severity, Result result, String explanation) {
+        this.loadId = loadId;
+        this.kind = kind;
+        this.severity = severity;
+        this.result = result;
+        this.explanation = explanation;
+    }
+
     public CheckKind getKind() { return kind; }
-    public void setKind(CheckKind kind) { this.kind = kind; }
     public Severity getSeverity() { return severity; }
-    public void setSeverity(Severity severity) { this.severity = severity; }
     public Result getResult() { return result; }
-    public void setResult(Result result) { this.result = result; }
     public String getExplanation() { return explanation; }
-    public void setExplanation(String explanation) { this.explanation = explanation; }
 }

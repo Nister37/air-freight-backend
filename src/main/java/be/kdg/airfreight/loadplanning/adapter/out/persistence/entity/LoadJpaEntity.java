@@ -49,8 +49,6 @@ public class LoadJpaEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public Long getVersion() { return version; }
-    public String getFlightId() { return flightId; }
     public void setFlightId(String flightId) { this.flightId = flightId; }
     public String getFlightNumber() { return flightNumber; }
     public void setFlightNumber(String flightNumber) { this.flightNumber = flightNumber; }

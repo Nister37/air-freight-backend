@@ -23,7 +23,6 @@ public class AircraftTypeJpaEntity {
 
     protected AircraftTypeJpaEntity() { }
 
-    public String getTypeCode() { return typeCode; }
     public String getRowSlots() { return rowSlots; }
     public String getNoseSlots() { return noseSlots; }
     public String getTailSlots() { return tailSlots; }
