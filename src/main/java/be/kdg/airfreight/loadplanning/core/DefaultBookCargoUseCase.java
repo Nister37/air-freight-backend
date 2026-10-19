@@ -1,10 +1,8 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.CargoBooking;
-import be.kdg.airfreight.loadplanning.LoadNotFoundException;
 import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.in.usecase.BookCargoUseCase;
-import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 
 @Service
@@ -21,18 +20,17 @@ class DefaultBookCargoUseCase implements BookCargoUseCase {
 
     private static final Logger LOGGER =  LoggerFactory.getLogger(DefaultBookCargoUseCase.class);
 
-    private final LoadLoadPort loadPort;
-    private final LoadUpdatePort updatePort;
+    private final LoadLookup loadLookup;
+    private final List<LoadUpdatePort> updatePorts;
 
-    DefaultBookCargoUseCase(LoadLoadPort loadPort, LoadUpdatePort updatePort) {
-        this.loadPort = loadPort;
-        this.updatePort = updatePort;
+    DefaultBookCargoUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts) {
+        this.loadLookup = loadLookup;
+        this.updatePorts = List.copyOf(updatePorts);
     }
 
     @Override
     public void bookCargo(CargoBooking booking) {
-        Load load = loadPort.load(booking.flightId())
-                .orElseThrow(()-> new LoadNotFoundException("No load for flight " + booking.flightId().key()));
+        Load load = loadLookup.required(booking.flightId());
 
         ULD uld = ULD.of(
                 new ULDCode(booking.uldCode()),
@@ -46,7 +44,7 @@ class DefaultBookCargoUseCase implements BookCargoUseCase {
                     booking.uldCode(), booking.flightId().key(), booking.messageId());
             return;
         }
-        updatePort.update(load);
+        updatePorts.forEach(port -> port.update(load));
     }
 
 

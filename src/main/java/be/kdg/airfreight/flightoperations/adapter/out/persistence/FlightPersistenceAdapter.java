@@ -7,11 +7,13 @@ import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.Del
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.FlightJpaRepository;
 import be.kdg.airfreight.flightoperations.domain.*;
 import be.kdg.airfreight.flightoperations.port.out.*;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.*;
 
 @Component
+@Order(1)
 class FlightPersistenceAdapter implements FlightLoadPort, FlightUpdatePort {
     private final FlightJpaRepository repository;
     private final DelayJpaRepository delays;

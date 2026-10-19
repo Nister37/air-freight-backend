@@ -183,6 +183,44 @@ class AirFreightIntegrationTests {
     }
 
     @Test
+    @WithMockUser(roles = "load-planner")
+    void finalisingLoadRollsBackWithItsEventAndPublishesOnlyAfterCommit() {
+        LocalDateTime departure = LocalDateTime.now(ZoneOffset.UTC).plusHours(2).withNano(0);
+        LocalDate date = departure.toLocalDate();
+        FlightFacts flight = flights.announceFlights(new FlightSchedule(date, date, Set.of(date.getDayOfWeek()),
+                departure.toLocalTime(), departure.plusHours(2).toLocalTime(),
+                new FlightNumber("HJ" + NUMBER.incrementAndGet()), new Airport("BRU"), new Airport("ATH"),
+                new AircraftRegistration("SXBAA"))).getFirst();
+        awaitMessages(flight.id(), "FLM", 1);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(loads.getLoad(flight.id())).isNotNull());
+
+        cargo.routeCargoFeed(new CargoBooking(UUID.randomUUID(), flight.id(), "AKE70001R7",
+                new BigDecimal("1000"), "KG", new Airport("ATH")));
+        cargo.routeCargoFeed(new CargoBooking(UUID.randomUUID(), flight.id(), "AKE70002R7",
+                new BigDecimal("1000"), "KG", new Airport("ATH")));
+        loads.placeULD(flight.id(), "AKE70001R7", "CL");
+        loads.placeULD(flight.id(), "AKE70002R7", "CR");
+
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            assertThat(loads.finaliseLoad(flight.id(), false).finalised()).isTrue();
+            assertThat(countMessages(flight.id(), "CPM")).isZero();
+            status.setRollbackOnly();
+        });
+        assertThat(loads.getLoad(flight.id()).finalised()).isFalse();
+        assertThat(flights.getFlightFacts(flight.id()).finalLoadReceived()).isFalse();
+        assertThat(countMessages(flight.id(), "CPM")).isZero();
+
+        assertThat(loads.finaliseLoad(flight.id(), false).finalised()).isTrue();
+        assertThat(loads.getLoad(flight.id()).finalised()).isTrue();
+        awaitMessages(flight.id(), "CPM", 1);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(flights.getFlightFacts(flight.id()).finalLoadReceived()).isTrue());
+        assertThat(jdbc.queryForObject("select body from pm_message where flight_key = ? and kind = 'CPM'",
+                String.class, flight.id().key())).contains("AKE70001R7", "AKE70002R7", "CL", "CR");
+    }
+
+    @Test
     void partnerOutageKeepsPublicationForRetryWithTheSameMessageIdentityAndBody() {
         doThrow(new IllegalStateException("Broker unavailable")).doNothing()
                 .when(rabbit).send(anyString(), anyString(), any(Message.class));
@@ -248,6 +286,12 @@ class AirFreightIntegrationTests {
         assertThat(flights.getFlightFacts(kept.id())).isNotNull();
         assertThat(jdbc.queryForObject("select count(*) from fo_delay where flight_id = ?", Long.class, expired.id().key())).isZero();
         awaitMessages(expired.id(), "FLM", 0);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertThat(jdbc.queryForObject("select count(*) from lp_load where flight_id = ?",
+                    Long.class, expired.id().key())).isZero();
+            assertThat(jdbc.queryForObject("select count(*) from lp_load where flight_id = ?",
+                    Long.class, kept.id().key())).isOne();
+        });
     }
 
     @Test

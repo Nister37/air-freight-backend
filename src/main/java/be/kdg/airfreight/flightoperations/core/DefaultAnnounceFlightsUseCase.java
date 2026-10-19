@@ -15,14 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 class DefaultAnnounceFlightsUseCase implements AnnounceFlightsUseCase {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAnnounceFlightsUseCase.class);
     private final FlightLoadPort loadPort;
-    private final FlightUpdatePort updatePort;
-    private final FlightEventPort eventPort;
+    private final List<FlightUpdatePort> updatePorts;
     private final PolicyQuery policyQuery;
 
-    DefaultAnnounceFlightsUseCase(FlightLoadPort loadPort, FlightUpdatePort updatePort, FlightEventPort eventPort, PolicyQuery policyQuery) {
+    DefaultAnnounceFlightsUseCase(FlightLoadPort loadPort, List<FlightUpdatePort> updatePorts, PolicyQuery policyQuery) {
         this.loadPort = loadPort;
-        this.updatePort = updatePort;
-        this.eventPort = eventPort;
+        this.updatePorts = List.copyOf(updatePorts);
         this.policyQuery = policyQuery;
     }
 
@@ -40,7 +38,7 @@ class DefaultAnnounceFlightsUseCase implements AnnounceFlightsUseCase {
                 LOGGER.info("Duplicate schedule flight ignored: {}", id.key());
                 continue;
             }
-            Flight flight = Flight.announce(schedule, date, LocalDateTime.now(ZoneOffset.UTC));
+            Flight flight = Flight.announce(schedule, date);
             save(flight);
             created.add(flight.facts());
         }
@@ -48,9 +46,7 @@ class DefaultAnnounceFlightsUseCase implements AnnounceFlightsUseCase {
     }
 
     private FlightFacts save(Flight flight) {
-        updatePort.update(flight);
-        flight.getDomainEvents().forEach(eventPort::publish);
-        flight.clearDomainEvents();
+        updatePorts.forEach(port -> port.update(flight));
         return flight.facts();
     }
 }

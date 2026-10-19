@@ -3,10 +3,15 @@ package be.kdg.airfreight.common.events;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.PlacedUld;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 public record LoadFinalisedEvent(UUID eventUUID, LocalDateTime eventPit, FlightId flightId,
                                  List<PlacedUld> placedUlds) implements DomainEvent {
+    public LoadFinalisedEvent(FlightId flightId, List<PlacedUld> placedUlds) {
+        this(UUID.randomUUID(), LocalDateTime.now(ZoneOffset.UTC), flightId, placedUlds);
+    }
+
     public LoadFinalisedEvent {
         Objects.requireNonNull(eventUUID);
         Objects.requireNonNull(eventPit);

@@ -1,12 +1,14 @@
 package be.kdg.airfreight.loadplanning.adapter.out.events;
 
-import be.kdg.airfreight.common.events.DomainEvent;
-import be.kdg.airfreight.loadplanning.port.out.LoadEventPort;
+import be.kdg.airfreight.loadplanning.domain.Load;
+import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-class SpringLoadEventPublisherAdapter implements LoadEventPort {
+@Order(2)
+class SpringLoadEventPublisherAdapter implements LoadUpdatePort {
 
     private final ApplicationEventPublisher publisher;
 
@@ -15,7 +17,13 @@ class SpringLoadEventPublisherAdapter implements LoadEventPort {
     }
 
     @Override
-    public void publish(DomainEvent event) {
-        publisher.publishEvent(event);
+    public void update(Load load) {
+        load.getDomainEvents().forEach(publisher::publishEvent);
+        load.clearDomainEvents();
+    }
+
+    @Override
+    public void remove(Load load) {
+        update(load);
     }
 }

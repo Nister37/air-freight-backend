@@ -1,7 +1,6 @@
 package be.kdg.airfreight.flightoperations.core;
 
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.FlightNotFoundException;
 import be.kdg.airfreight.flightoperations.domain.*;
 import be.kdg.airfreight.flightoperations.port.in.usecase.ProcessCPMUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
@@ -15,19 +14,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class DefaultProcessCPMUseCase implements ProcessCPMUseCase {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultProcessCPMUseCase.class);
-    private final FlightLoadPort loadPort;
-    private final FlightUpdatePort updatePort;
-    private final FlightEventPort eventPort;
+    private final FlightLookup flightLookup;
+    private final List<FlightUpdatePort> updatePorts;
 
-    DefaultProcessCPMUseCase(FlightLoadPort loadPort, FlightUpdatePort updatePort, FlightEventPort eventPort) {
-        this.loadPort = loadPort;
-        this.updatePort = updatePort;
-        this.eventPort = eventPort;
+    DefaultProcessCPMUseCase(FlightLookup flightLookup, List<FlightUpdatePort> updatePorts) {
+        this.flightLookup = flightLookup;
+        this.updatePorts = List.copyOf(updatePorts);
     }
 
     @Override
     public void processCPM(FlightId id) {
-        Flight flight = required(id);
+        Flight flight = flightLookup.required(id);
         if (flight.facts().finalLoadReceived()) {
             LOGGER.info("Duplicate final-load CPM ignored for {}", id.key());
             return;
@@ -36,17 +33,8 @@ class DefaultProcessCPMUseCase implements ProcessCPMUseCase {
         save(flight);
     }
 
-    private Flight required(FlightId id) {
-        return loadPort.load(id).orElseThrow(() -> {
-            LOGGER.warn("Flight does not exist: {}", id.key());
-            return new FlightNotFoundException("Flight does not exist: " + id.key());
-        });
-    }
-
     private FlightFacts save(Flight flight) {
-        updatePort.update(flight);
-        flight.getDomainEvents().forEach(eventPort::publish);
-        flight.clearDomainEvents();
+        updatePorts.forEach(port -> port.update(flight));
         return flight.facts();
     }
 }

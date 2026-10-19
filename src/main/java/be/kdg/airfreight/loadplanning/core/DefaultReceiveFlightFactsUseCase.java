@@ -9,6 +9,7 @@ import be.kdg.airfreight.loadplanning.domain.LoadingWindow;
 import be.kdg.airfreight.loadplanning.port.in.usecase.ReceiveFlightFactsUseCase;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 class DefaultReceiveFlightFactsUseCase implements ReceiveFlightFactsUseCase {
 
     private final LoadLoadPort loadPort;
-    private final LoadUpdatePort updatePort;
+    private final List<LoadUpdatePort> updatePorts;
     private final PolicyQuery policyQuery;
 
-    DefaultReceiveFlightFactsUseCase(LoadLoadPort loadPort, LoadUpdatePort updatePort, PolicyQuery policyQuery) {
+    DefaultReceiveFlightFactsUseCase(LoadLoadPort loadPort, List<LoadUpdatePort> updatePorts, PolicyQuery policyQuery) {
         this.loadPort = loadPort;
-        this.updatePort = updatePort;
+        this.updatePorts = List.copyOf(updatePorts);
         this.policyQuery = policyQuery;
     }
 
@@ -39,7 +40,7 @@ class DefaultReceiveFlightFactsUseCase implements ReceiveFlightFactsUseCase {
                 .orElseGet(() -> Load.open(LoadId.create(), facts.id(),
                         facts.aircraftRegistration(), facts.arrivalAirport(), window));
 
-        updatePort.update(load);
+        updatePorts.forEach(port -> port.update(load));
     }
 
     private LoadingWindow loadingWindowFor(FlightFacts facts) {

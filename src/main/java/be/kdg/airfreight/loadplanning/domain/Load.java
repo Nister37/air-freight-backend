@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.UUID;
 
 
 public final class Load {
@@ -231,7 +230,7 @@ public final class Load {
         }
 
         status = LoadStatus.FINAL;
-        domainEvents.add(new LoadFinalisedEvent(UUID.randomUUID(), now, flightId, placedUlds()));
+        domainEvents.add(new LoadFinalisedEvent(flightId, placedUlds()));
     }
     //Converts placements into the shared PlacedUld contract used in LoadFinalisedEvent.
     private List<PlacedUld> placedUlds() {

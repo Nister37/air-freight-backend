@@ -4,6 +4,7 @@ import be.kdg.airfreight.common.events.FlightTimesChangedEvent;
 import be.kdg.airfreight.common.events.FlightLandedEvent;
 import be.kdg.airfreight.common.events.FlightDepartedEvent;
 import be.kdg.airfreight.common.events.FlightCreatedEvent;
+import be.kdg.airfreight.common.events.FlightRemovedEvent;
 import be.kdg.airfreight.common.events.DomainEvent;
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.flightoperations.DelayNotFoundException;
@@ -35,11 +36,11 @@ public class Flight {
         this.finalLoadReceived = finalLoadReceived;
     }
 
-    public static Flight announce(FlightSchedule schedule, LocalDate date, LocalDateTime now) {
+    public static Flight announce(FlightSchedule schedule, LocalDate date) {
         Flight flight = new Flight(new FlightId(schedule.flightNumber(), date, schedule.departureAirport()),
                 schedule.arrivalAirport(), schedule.aircraftRegistration(), new Departure(schedule.departureOn(date)),
                 new Arrival(schedule.arrivalOn(date)), false);
-        flight.domainEvents.add(new FlightCreatedEvent(UUID.randomUUID(), now, flight.facts()));
+        flight.domainEvents.add(new FlightCreatedEvent(flight.facts()));
         return flight;
     }
 
@@ -48,23 +49,27 @@ public class Flight {
         return new Flight(id, arrivalAirport, registration, departure, arrival, finalLoadReceived);
     }
 
+    public void remove() {
+        domainEvents.add(new FlightRemovedEvent(id));
+    }
+
     public boolean isDeparted() { return departure.isDeparted(); }
     public boolean isLanded() { return arrival.isLanded(); }
 
-    public void registerDepartureDelay(Delay delay, LocalDateTime now) {
+    public void registerDepartureDelay(Delay delay) {
         validateNewDelay(delay);
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
         departure.registerDelay(delay);
-        recordEstimateChanges(oldDeparture, oldArrival, now);
+        recordEstimateChanges(oldDeparture, oldArrival);
     }
 
-    public void registerArrivalDelay(Delay delay, LocalDateTime now) {
+    public void registerArrivalDelay(Delay delay) {
         validateNewDelay(delay);
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
         arrival.registerDelay(delay);
-        recordEstimateChanges(oldDeparture, oldArrival, now);
+        recordEstimateChanges(oldDeparture, oldArrival);
     }
 
     private void validateNewDelay(Delay delay) {
@@ -73,7 +78,7 @@ public class Flight {
         validateTotalDelay(totalDelayMinutes() + delay.minutes());
     }
 
-    public void correctDelay(DelayId id, int minutes, String description, LocalDateTime now) {
+    public void correctDelay(DelayId id, int minutes, String description) {
         Delay old = delay(id);
         Delay corrected = old.corrected(minutes, description);
         validateTotalDelay(totalDelayMinutes() - old.minutes() + corrected.minutes());
@@ -81,16 +86,16 @@ public class Flight {
         LocalDateTime oldArrival = estimatedArrival();
         if (departure.hasDelay(id)) departure.correctDelay(id, minutes, description);
         else arrival.correctDelay(id, minutes, description);
-        recordEstimateChanges(oldDeparture, oldArrival, now);
+        recordEstimateChanges(oldDeparture, oldArrival);
     }
 
-    public void removeDelay(DelayId id, LocalDateTime now) {
+    public void removeDelay(DelayId id) {
         delay(id);
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
         if (departure.hasDelay(id)) departure.removeDelay(id);
         else arrival.removeDelay(id);
-        recordEstimateChanges(oldDeparture, oldArrival, now);
+        recordEstimateChanges(oldDeparture, oldArrival);
     }
 
     private Delay delay(DelayId id) {
@@ -104,13 +109,13 @@ public class Flight {
     public void recordDeparture(LocalDateTime at, LocalDateTime now, int toleranceMinutes) {
         if (!finalLoadReceived) throw new IllegalStateException("Departure refused: the final-load CPM has not been processed yet");
         departure.recordDeparture(at, now, toleranceMinutes);
-        domainEvents.add(new FlightDepartedEvent(UUID.randomUUID(), now, facts()));
+        domainEvents.add(new FlightDepartedEvent(facts()));
     }
 
     public void recordArrival(LocalDateTime at, LocalDateTime now, int toleranceMinutes) {
         if (!isDeparted()) throw new IllegalStateException("Arrival requires an actual departure first");
         arrival.recordArrival(at, now, toleranceMinutes, departure.actualTime(), departure.totalDelayMinutes());
-        domainEvents.add(new FlightLandedEvent(UUID.randomUUID(), now, facts()));
+        domainEvents.add(new FlightLandedEvent(facts()));
     }
 
     private long totalDelayMinutes() { return departure.totalDelayMinutes() + arrival.totalDelayMinutes(); }
@@ -121,11 +126,11 @@ public class Flight {
 
     private LocalDateTime estimatedArrival() { return arrival.estimatedTime(departure.totalDelayMinutes()); }
 
-    private void recordEstimateChanges(LocalDateTime oldDeparture, LocalDateTime oldArrival, LocalDateTime now) {
+    private void recordEstimateChanges(LocalDateTime oldDeparture, LocalDateTime oldArrival) {
         boolean departureChanged = !departure.estimatedTime().equals(oldDeparture);
         boolean arrivalChanged = !estimatedArrival().equals(oldArrival);
         if (departureChanged || arrivalChanged) {
-            domainEvents.add(new FlightTimesChangedEvent(UUID.randomUUID(), now, facts(), departureChanged, arrivalChanged));
+            domainEvents.add(new FlightTimesChangedEvent(facts(), departureChanged, arrivalChanged));
         }
     }
 

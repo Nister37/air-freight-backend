@@ -4,6 +4,7 @@ import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.loadplanning.port.in.usecase.RemoveLoadForFlightUseCase;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 class DefaultRemoveLoadForFlightUseCase implements RemoveLoadForFlightUseCase {
 
     private final LoadLoadPort loadPort;
-    private final LoadUpdatePort updatePort;
+    private final List<LoadUpdatePort> updatePorts;
 
-    DefaultRemoveLoadForFlightUseCase(LoadLoadPort loadPort, LoadUpdatePort updatePort) {
+    DefaultRemoveLoadForFlightUseCase(LoadLoadPort loadPort, List<LoadUpdatePort> updatePorts) {
         this.loadPort = loadPort;
-        this.updatePort = updatePort;
+        this.updatePorts = List.copyOf(updatePorts);
     }
 
     @Override
     public void removeLoadForFlight(FlightId id){
-        loadPort.load(id).ifPresent(updatePort::remove);
+        loadPort.load(id).ifPresent(load -> updatePorts.forEach(port -> port.remove(load)));
     }
 }
