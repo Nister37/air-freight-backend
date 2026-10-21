@@ -9,10 +9,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 public class MvtTelegramConverter implements MessageConverter {
+    private final MvtTelegramFormatter formatter;
+
+    public MvtTelegramConverter(MvtTelegramFormatter formatter) {
+        this.formatter = formatter;
+    }
+
     @Override
     public Message toMessage(Object object, MessageProperties properties) {
         String text = switch (object) {
-            case MvtTelegram telegram -> telegram.toText();
+            case MvtTelegram telegram -> formatter.toText(telegram);
             // History already contains the telegram text. Retries must not parse its dates again.
             case String savedBody -> savedBody;
             default -> throw new MessageConversionException("Expected an MVT telegram or its saved text");
@@ -26,7 +32,7 @@ public class MvtTelegramConverter implements MessageConverter {
     public Object fromMessage(Message message) {
         String text = new String(message.getBody(), StandardCharsets.UTF_8);
         try {
-            return MvtTelegram.parse(text, LocalDateTime.now(ZoneOffset.UTC));
+            return formatter.parse(text, LocalDateTime.now(ZoneOffset.UTC));
         } catch (IllegalArgumentException exception) {
             throw new MessageConversionException("Invalid IATA MVT telegram", exception);
         }

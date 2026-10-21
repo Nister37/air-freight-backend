@@ -11,14 +11,17 @@ import java.util.*;
 @Component
 class PartnerMessageFormatAdapter implements MessageFormatPort {
     private final JsonMapper mapper;
-    PartnerMessageFormatAdapter(JsonMapper mapper) { this.mapper = mapper; }
+    private final MvtTelegramFormatter telegrams;
+
+    PartnerMessageFormatAdapter(JsonMapper mapper, MvtTelegramFormatter telegrams) {
+        this.mapper = mapper;
+        this.telegrams = telegrams;
+    }
     public String json(UUID messageId, LocalDateTime producedAt, int version, Object data) {
         return mapper.writeValueAsString(Map.of("messageId", messageId, "producedAt", producedAt,
                 "formatVersion", version, "data", data));
     }
     public String telegram(FlightFacts flight, MessageKind kind, LocalDateTime movementTime) {
-        boolean departure = kind == MessageKind.MVT_ED || kind == MessageKind.MVT_AD;
-        return new MvtTelegram(flight.id().flightNumber(), flight.id().scheduledDepartureDate(), flight.aircraftRegistration(),
-                departure ? flight.id().departureAirport() : flight.arrivalAirport(), kind, movementTime).toText();
+        return telegrams.toText(flight, kind, movementTime);
     }
 }
