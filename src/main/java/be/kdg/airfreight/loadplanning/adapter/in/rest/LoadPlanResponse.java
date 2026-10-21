@@ -10,7 +10,9 @@ import java.util.List;
 public record LoadPlanResponse(LoadFacts load, FloorPlanResponse floorPlan, List<BlockageResponse> blockages,
                         boolean loadingWindowOpen) {
     public static LoadPlanResponse from(LoadPlan plan) {
-        FloorPlan floor = plan.floorPlan();
+        if (!(plan.floorPlan() instanceof MainDeckFloorPlan floor)) {
+            throw new IllegalArgumentException("Only main-deck floor plans can be returned");
+        }
         return new LoadPlanResponse(plan.load().facts(), new FloorPlanResponse(
                 floor.rows().stream().map(Slot::value).toList(),
                 floor.noseSlots().stream().map(Slot::value).toList(),

@@ -5,6 +5,7 @@ import be.kdg.airfreight.loadplanning.adapter.out.persistence.entity.AircraftTyp
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.AircraftJpaRepository;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.AircraftTypeJpaRepository;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.MainDeckFloorPlan;
 import be.kdg.airfreight.loadplanning.domain.Slot;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import org.springframework.stereotype.Component;
@@ -32,7 +33,7 @@ class AircraftPersistenceAdapter implements AircraftLoadPort {
     }
 
     private static FloorPlan toFloorPlan(AircraftTypeJpaEntity type) {
-        return new FloorPlan(
+        return new MainDeckFloorPlan(
                 slots(type.getRowSlots()),
                 slots(type.getNoseSlots()),
                 slots(type.getTailSlots()),

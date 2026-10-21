@@ -6,8 +6,15 @@ import java.math.RoundingMode;
 final class LateralBalanceCheckRule implements LoadCheckRule {
     @Override
     public LoadCheck check(LoadView load, FloorPlan floorPlan, LoadRules rules) {
-        BigDecimal left = weightOnSide(load, Side.LEFT);
-        BigDecimal right = weightOnSide(load, Side.RIGHT);
+        BigDecimal left = BigDecimal.ZERO;
+        BigDecimal right = BigDecimal.ZERO;
+        for (ULDPlacement placement : load.placements()) {
+            Weight weight = load.ulds().stream()
+                    .filter(uld -> uld.code().equals(placement.code()))
+                    .findFirst().orElseThrow().weight();
+            left = left.add(placement.position().leftWeightInKg(weight));
+            right = right.add(placement.position().rightWeightInKg(weight));
+        }
         BigDecimal heavier = left.max(right);
         BigDecimal lighter = left.min(right);
         BigDecimal factor = BigDecimal.ONE.add(rules.maxLateralDifferencePercent().movePointLeft(2));
@@ -17,13 +24,6 @@ final class LateralBalanceCheckRule implements LoadCheckRule {
         return heavier.compareTo(maxHeavier) <= 0
                 ? LoadCheck.passed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail)
                 : LoadCheck.failed(CheckKind.LATERAL_BALANCE, Severity.HARD, detail);
-    }
-
-    private BigDecimal weightOnSide(LoadView load, Side side) {
-        return load.placements().stream().filter(placement -> placement.position().side() == side)
-                .map(placement -> load.ulds().stream().filter(uld -> uld.code().equals(placement.code()))
-                        .findFirst().orElseThrow().weight().toKg())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // Round report text only; comparisons use the exact weights.

@@ -107,8 +107,15 @@ class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
             row.setDestinationAirport(uld.destination().value());
 
             Position position = positions.get(uld.code());
-            row.setPositionSide(position == null ? null : position.side());
-            row.setPositionSlot(position == null ? null : position.slot().value());
+            if (position == null) {
+                row.setPositionSide(null);
+                row.setPositionSlot(null);
+            } else if (position instanceof MainDeckPosition mainDeck) {
+                row.setPositionSide(mainDeck.side());
+                row.setPositionSlot(mainDeck.slot().value());
+            } else {
+                throw new IllegalArgumentException("Only main-deck positions can be persisted");
+            }
             current.add(row);
         }
         ulds.saveAll(current);
@@ -142,7 +149,7 @@ class LoadPersistenceAdapter implements LoadLoadPort, LoadUpdatePort {
                 .filter(row -> row.getPositionSide() != null)
                 .map(row -> new ULDPlacement(
                         new ULDCode(row.getUldCode()),
-                        new Position(row.getPositionSide(), new Slot(row.getPositionSlot()))))
+                        new MainDeckPosition(row.getPositionSide(), new Slot(row.getPositionSlot()))))
                 .toList();
 
         List<LoadCheck> checkList = checks.findByLoadIdOrderByIdAsc(entity.getId()).stream()

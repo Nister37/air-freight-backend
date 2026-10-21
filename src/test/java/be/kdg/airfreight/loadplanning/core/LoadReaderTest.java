@@ -24,7 +24,7 @@ class LoadReaderTest {
     private static final LocalDateTime NOW = DATE.atTime(10, 0);
     private static final FlightId FLIGHT_ID = new FlightId(new FlightNumber("HJ221"), DATE, new Airport("BRU"));
     private static final AircraftRegistration REGISTRATION = new AircraftRegistration("SXBAA");
-    private static final FloorPlan FLOOR_PLAN = new FloorPlan(
+    private static final FloorPlan FLOOR_PLAN = new MainDeckFloorPlan(
             Stream.of("C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "P", "R", "S", "T", "U").map(Slot::new).toList(),
             List.of(new Slot("A1"), new Slot("A2"), new Slot("B1")), List.of(new Slot("X")), new Slot("R"));
     private final LoadLoadPort loads = mock(LoadLoadPort.class);
