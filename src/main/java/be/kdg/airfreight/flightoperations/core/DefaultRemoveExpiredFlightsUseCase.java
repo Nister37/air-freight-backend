@@ -15,18 +15,18 @@ class DefaultRemoveExpiredFlightsUseCase implements RemoveExpiredFlightsUseCase 
     private final FlightLoadPort loadPort;
     private final FlightLookup flightLookup;
     private final List<FlightUpdatePort> updatePorts;
-    private final PolicyQuery policyQuery;
+    private final FlightPolicyReader policyReader;
 
-    DefaultRemoveExpiredFlightsUseCase(FlightLoadPort loadPort, FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, PolicyQuery policyQuery) {
+    DefaultRemoveExpiredFlightsUseCase(FlightLoadPort loadPort, FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, FlightPolicyReader policyReader) {
         this.loadPort = loadPort;
         this.flightLookup = flightLookup;
         this.updatePorts = List.copyOf(updatePorts);
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
     public void removeExpiredFlights() {
-        LocalDate cutoff = LocalDate.now(ZoneOffset.UTC).minusDays(policyQuery.currentPolicy().flightRetentionDays());
+        LocalDate cutoff = LocalDate.now(ZoneOffset.UTC).minusDays(policyReader.current().flightRetentionDays());
         for (Flight expired : loadPort.loadExpired(cutoff)) {
             Flight flight = flightLookup.required(expired.facts().id());
             flight.remove();

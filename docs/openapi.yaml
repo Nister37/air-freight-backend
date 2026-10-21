@@ -206,29 +206,57 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
         '503': {$ref: '#/components/responses/Unavailable'}
-  /api/policy:
+  /api/flights/policy:
     get:
-      tags: [Policy]
-      operationId: getPolicy
-      summary: Read operational settings
+      tags: [Flights, Policy]
+      operationId: getFlightPolicy
+      summary: Read flight policy settings
       description: Requires flight-planner, load-planner or admin. Returns defaults until settings are saved.
       responses:
-        '200': {$ref: '#/components/responses/Policy'}
+        '200': {$ref: '#/components/responses/FlightPolicy'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '503': {$ref: '#/components/responses/Unavailable'}
     put:
-      tags: [Policy]
-      operationId: updatePolicy
-      summary: Replace all six operational settings
-      description: Requires admin. Opening offset must exceed the closing offset. All six fields are required. Changes persist across restarts and apply to subsequent actions on existing flights and open loads; final loads stay frozen.
+      tags: [Flights, Policy]
+      operationId: updateFlightPolicy
+      summary: Replace the two flight policy settings
+      description: Requires admin. Both fields are required. Changes persist across restarts and apply to subsequent actions on existing flights. Recorded actual times are unchanged.
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/OperationsPolicy'}
+            schema: {$ref: '#/components/schemas/FlightPolicy'}
       responses:
-        '200': {$ref: '#/components/responses/Policy'}
+        '200': {$ref: '#/components/responses/FlightPolicy'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/loads/policy:
+    get:
+      tags: [Loads, Policy]
+      operationId: getLoadPolicy
+      summary: Read load policy settings
+      description: Requires flight-planner, load-planner or admin. Returns defaults until settings are saved.
+      responses:
+        '200': {$ref: '#/components/responses/LoadPolicy'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    put:
+      tags: [Loads, Policy]
+      operationId: updateLoadPolicy
+      summary: Replace the four load policy settings
+      description: Requires admin. All four fields are required. Opening offset must exceed the closing offset. Changes persist across restarts and apply to subsequent actions on existing open loads; final loads stay frozen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoadPolicy'}
+      responses:
+        '200': {$ref: '#/components/responses/LoadPolicy'}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -542,9 +570,15 @@ components:
       required: [actualTime]
       properties:
         actualTime: {$ref: '#/components/schemas/UtcLocalDateTime'}
-    OperationsPolicy:
+    FlightPolicy:
       type: object
-      required: [offloadingConstraint, loadingWindowOpeningMinutes, loadingWindowClosingMinutes, maximumLateralWeightDifferencePercent, flightRetentionDays, actualTimeToleranceMinutes]
+      required: [flightRetentionDays, actualTimeToleranceMinutes]
+      properties:
+        flightRetentionDays: {type: integer, minimum: 1, default: 7}
+        actualTimeToleranceMinutes: {type: integer, minimum: 0, default: 5}
+    LoadPolicy:
+      type: object
+      required: [offloadingConstraint, loadingWindowOpeningMinutes, loadingWindowClosingMinutes, maximumLateralWeightDifferencePercent]
       properties:
         offloadingConstraint: {type: string, enum: [HARD, SOFT], default: HARD}
         loadingWindowOpeningMinutes: {type: integer, minimum: 1, default: 720}
@@ -555,8 +589,6 @@ components:
           multipleOf: 0.000001
           default: 10
           description: Up to 13 integer and 6 fractional digits.
-        flightRetentionDays: {type: integer, minimum: 1, default: 7}
-        actualTimeToleranceMinutes: {type: integer, minimum: 0, default: 5}
     Placement:
       type: object
       required: [position]
@@ -698,11 +730,16 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/FlightFacts'}
-    Policy:
-      description: Current operational settings.
+    FlightPolicy:
+      description: Current flight retention and actual-time tolerance settings.
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/OperationsPolicy'}
+          schema: {$ref: '#/components/schemas/FlightPolicy'}
+    LoadPolicy:
+      description: Current loading-window, lateral-weight and offloading settings.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LoadPolicy'}
     BadRequest:
       description: Invalid input. Domain/JSON failures return ApiError; binding failures may use Spring's default error response.
       content:

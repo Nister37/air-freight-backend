@@ -19,7 +19,7 @@ class SecurityConfiguration {
         return http.cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("flight-planner", "load-planner", "admin")
-                        .requestMatchers(HttpMethod.PUT, "/api/policy").hasRole("admin")
+                        .requestMatchers(HttpMethod.PUT, "/api/flights/policy", "/api/loads/policy").hasRole("admin")
                         .requestMatchers("/api/flights/**", "/api/simulation/schedules").hasRole("flight-planner")
                         .requestMatchers("/api/loads/**", "/api/simulation/cargo-bookings").hasRole("load-planner")
                         .anyRequest().authenticated())

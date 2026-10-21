@@ -1,8 +1,7 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.FlightFacts;
-import be.kdg.airfreight.common.OperationsPolicy;
-import be.kdg.airfreight.common.PolicyQuery;
+import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.LoadId;
 import be.kdg.airfreight.loadplanning.domain.LoadingWindow;
@@ -24,14 +23,14 @@ class DefaultReceiveFlightFactsUseCase implements ReceiveFlightFactsUseCase {
 
     private final LoadLoadPort loadPort;
     private final List<LoadUpdatePort> updatePorts;
-    private final PolicyQuery policyQuery;
+    private final LoadPolicyReader policyReader;
     private final FlightRequestPort flights;
 
     DefaultReceiveFlightFactsUseCase(LoadLoadPort loadPort, List<LoadUpdatePort> updatePorts,
-                                   PolicyQuery policyQuery, FlightRequestPort flights) {
+                                   LoadPolicyReader policyReader, FlightRequestPort flights) {
         this.loadPort = loadPort;
         this.updatePorts = List.copyOf(updatePorts);
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
         this.flights = flights;
     }
 
@@ -53,7 +52,7 @@ class DefaultReceiveFlightFactsUseCase implements ReceiveFlightFactsUseCase {
     }
 
     private LoadingWindow loadingWindowFor(FlightFacts facts) {
-        OperationsPolicy policy = policyQuery.currentPolicy();
+        LoadPolicy policy = policyReader.current();
         return LoadingWindow.beforeDeparture(facts.scheduledDeparture(), facts.estimatedDeparture(),
                 policy.loadingWindowOpeningMinutes(), policy.loadingWindowClosingMinutes());
     }

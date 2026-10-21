@@ -1,7 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.common.PolicyQuery;
 import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.in.command.MoveULDCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.MoveULDUseCase;
@@ -20,14 +19,14 @@ class DefaultMoveULDUseCase implements MoveULDUseCase {
     private final LoadLookup loadLookup;
     private final List<LoadUpdatePort> updatePorts;
     private final AircraftLoadPort aircraftPort;
-    private final PolicyQuery policyQuery;
+    private final LoadPolicyReader policyReader;
 
     DefaultMoveULDUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts,
-                         AircraftLoadPort aircraftPort, PolicyQuery policyQuery) {
+                         AircraftLoadPort aircraftPort, LoadPolicyReader policyReader) {
         this.loadLookup = loadLookup;
         this.updatePorts = List.copyOf(updatePorts);
         this.aircraftPort = aircraftPort;
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
@@ -40,8 +39,8 @@ class DefaultMoveULDUseCase implements MoveULDUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Position does not exist on this aircraft"));
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         load.move(new ULDCode(command.uldCode()), position, floorPlan, now);
-        var policy = policyQuery.currentPolicy();
-        load.check(floorPlan, new LoadRules(Severity.valueOf(policy.offloadingConstraint().name()),
+        var policy = policyReader.current();
+        load.check(floorPlan, new LoadRules(policy.offloadingConstraint(),
                 policy.maximumLateralWeightDifferencePercent()), now);
         updatePorts.forEach(port -> port.update(load));
         return load.facts();

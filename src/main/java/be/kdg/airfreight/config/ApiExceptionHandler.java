@@ -1,6 +1,5 @@
 package be.kdg.airfreight.config;
 
-import be.kdg.airfreight.operationscoordination.LoadPlanningUnavailableException;
 import be.kdg.airfreight.flightoperations.FlightNotFoundException;
 import be.kdg.airfreight.flightoperations.DelayNotFoundException;
 import org.slf4j.*;
@@ -26,8 +25,6 @@ class ApiExceptionHandler {
     ResponseEntity<ApiError> missingDelay(DelayNotFoundException e) { return error(HttpStatus.NOT_FOUND, e.getMessage()); }
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<ApiError> refused(IllegalStateException e) { return error(HttpStatus.CONFLICT, e.getMessage()); }
-    @ExceptionHandler(LoadPlanningUnavailableException.class)
-    ResponseEntity<ApiError> loadUnavailable(LoadPlanningUnavailableException e) { return error(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage()); }
     @ExceptionHandler({OptimisticLockingFailureException.class, DataIntegrityViolationException.class})
     ResponseEntity<ApiError> concurrent(DataAccessException e) { return error(HttpStatus.CONFLICT, "Data changed concurrently; reload and retry"); }
     @ExceptionHandler(DataAccessException.class)

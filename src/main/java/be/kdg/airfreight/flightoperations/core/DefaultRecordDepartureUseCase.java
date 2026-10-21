@@ -16,19 +16,19 @@ import org.springframework.transaction.annotation.Transactional;
 class DefaultRecordDepartureUseCase implements RecordDepartureUseCase {
     private final FlightLookup flightLookup;
     private final List<FlightUpdatePort> updatePorts;
-    private final PolicyQuery policyQuery;
+    private final FlightPolicyReader policyReader;
 
-    DefaultRecordDepartureUseCase(FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, PolicyQuery policyQuery) {
+    DefaultRecordDepartureUseCase(FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, FlightPolicyReader policyReader) {
         this.flightLookup = flightLookup;
         this.updatePorts = List.copyOf(updatePorts);
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_flight-planner')")
     public FlightFacts recordDeparture(RecordActualTimeCommand command) {
         Flight flight = flightLookup.required(command.flightId());
-        flight.recordDeparture(command.actualTime(), LocalDateTime.now(ZoneOffset.UTC), policyQuery.currentPolicy().actualTimeToleranceMinutes());
+        flight.recordDeparture(command.actualTime(), LocalDateTime.now(ZoneOffset.UTC), policyReader.current().actualTimeToleranceMinutes());
         return save(flight);
     }
 

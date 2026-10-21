@@ -57,11 +57,20 @@ Content-Type: application/json
 
 > {% client.test("Landed delays are frozen", function () { client.assert(response.status === 409); }); %}
 
-### Policy update by a flight planner
-PUT {{baseUrl}}/api/policy
+### Flight policy update by a flight planner
+PUT {{baseUrl}}/api/flights/policy
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-{"offloadingConstraint":"HARD","loadingWindowOpeningMinutes":720,"loadingWindowClosingMinutes":20,"maximumLateralWeightDifferencePercent":10,"flightRetentionDays":7,"actualTimeToleranceMinutes":5}
+{"flightRetentionDays":7,"actualTimeToleranceMinutes":5}
 
-> {% client.test("Policy update requires admin", function () { client.assert(response.status === 403); }); %}
+> {% client.test("Flight policy update requires admin", function () { client.assert(response.status === 403); }); %}
+
+### Load policy update by a flight planner
+PUT {{baseUrl}}/api/loads/policy
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{"offloadingConstraint":"HARD","loadingWindowOpeningMinutes":720,"loadingWindowClosingMinutes":20,"maximumLateralWeightDifferencePercent":10}
+
+> {% client.test("Load policy update requires admin", function () { client.assert(response.status === 403); }); %}

@@ -1,10 +1,8 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.common.PolicyQuery;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.LoadRules;
-import be.kdg.airfreight.loadplanning.domain.Severity;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.ULDCode;
@@ -26,14 +24,14 @@ class DefaultRemovePlacementUseCase implements RemovePlacementUseCase {
     private final LoadLookup loadLookup;
     private final List<LoadUpdatePort> updatePorts;
     private final AircraftLoadPort aircraftPort;
-    private final PolicyQuery policyQuery;
+    private final LoadPolicyReader policyReader;
 
     DefaultRemovePlacementUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts,
-                                 AircraftLoadPort aircraftPort, PolicyQuery policyQuery) {
+                                 AircraftLoadPort aircraftPort, LoadPolicyReader policyReader) {
         this.loadLookup = loadLookup;
         this.updatePorts = List.copyOf(updatePorts);
         this.aircraftPort = aircraftPort;
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
@@ -44,8 +42,8 @@ class DefaultRemovePlacementUseCase implements RemovePlacementUseCase {
                 .orElseThrow(() -> new IllegalStateException("No floor plan known for aircraft " + load.aircraftRegistration().value()));
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         load.removePlacement(new ULDCode(command.uldCode()), now);
-        var policy = policyQuery.currentPolicy();
-        load.check(floorPlan, new LoadRules(Severity.valueOf(policy.offloadingConstraint().name()),
+        var policy = policyReader.current();
+        load.check(floorPlan, new LoadRules(policy.offloadingConstraint(),
                 policy.maximumLateralWeightDifferencePercent()), now);
         return save(load);
     }

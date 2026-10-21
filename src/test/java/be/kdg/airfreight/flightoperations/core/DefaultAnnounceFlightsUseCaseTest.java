@@ -5,7 +5,7 @@ import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightNumber;
 import be.kdg.airfreight.common.FlightSchedule;
-import be.kdg.airfreight.common.OperationsPolicy;
+import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
 import be.kdg.airfreight.common.events.FlightCreatedEvent;
 import be.kdg.airfreight.flightoperations.domain.Flight;
 import be.kdg.airfreight.flightoperations.port.out.FlightLoadPort;
@@ -30,7 +30,8 @@ class DefaultAnnounceFlightsUseCaseTest {
     private final FlightLoadPort loadPort = mock(FlightLoadPort.class);
     private final FlightUpdatePort updatePort = mock(FlightUpdatePort.class);
     private final DefaultAnnounceFlightsUseCase useCase =
-            new DefaultAnnounceFlightsUseCase(loadPort, List.of(updatePort), OperationsPolicy::defaults);
+            new DefaultAnnounceFlightsUseCase(new FlightAnnouncement(loadPort, List.of(updatePort),
+                    new FlightPolicyReader(() -> Optional.of(FlightPolicy.defaults()))));
     private final LocalDate monday = LocalDate.now(ZoneOffset.UTC).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
 
     @Test

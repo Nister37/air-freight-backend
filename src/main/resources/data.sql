@@ -3,11 +3,14 @@
 -- These snapshots bypass domain events: no FLM/CPM history is fabricated.
 SET TIME ZONE 'UTC';
 
-INSERT INTO oc_policy (id, version, offloading_constraint, loading_window_opening_minutes,
-                       loading_window_closing_minutes, maximum_lateral_weight_difference_percent,
-                       flight_retention_days, actual_time_tolerance_minutes)
-SELECT 1, 0, 'HARD', 720, 20, 10, 7, 5
-WHERE NOT EXISTS (SELECT 1 FROM oc_policy WHERE id = 1);
+INSERT INTO fo_policy (id, version, flight_retention_days, actual_time_tolerance_minutes)
+SELECT 1, 0, 7, 5
+WHERE NOT EXISTS (SELECT 1 FROM fo_policy WHERE id = 1);
+
+INSERT INTO lp_policy (id, version, offloading_constraint, loading_window_opening_minutes,
+                       loading_window_closing_minutes, maximum_lateral_weight_difference_percent)
+SELECT 1, 0, 'HARD', 720, 20, 10
+WHERE NOT EXISTS (SELECT 1 FROM lp_policy WHERE id = 1);
 
 -- Scheduled flight without a final load: delay editing and departure refusal.
 INSERT INTO fo_flight (id, version, flight_number, scheduled_departure_date, departure_airport,

@@ -2,6 +2,7 @@ package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.loadplanning.domain.*;
+import be.kdg.airfreight.loadplanning.port.out.LoadPolicyLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.FlightRequestPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
@@ -28,9 +29,9 @@ class LoadReaderTest {
             List.of(new Slot("A1"), new Slot("A2"), new Slot("B1")), List.of(new Slot("X")), new Slot("R"));
     private final LoadLoadPort loads = mock(LoadLoadPort.class);
     private final FlightRequestPort flights = mock(FlightRequestPort.class);
-    private final PolicyQuery policy = mock(PolicyQuery.class);
+    private final LoadPolicyLoadPort policy = mock(LoadPolicyLoadPort.class);
     private final AircraftLoadPort aircraft = mock(AircraftLoadPort.class);
-    private final LoadReader reader = new LoadReader(loads, flights, policy);
+    private final LoadReader reader = new LoadReader(loads, flights, new LoadPolicyReader(policy));
 
     @Test
     void queriesUseCurrentFlightAndPolicyWithoutChangingTheLoadedAggregate() {
@@ -38,8 +39,8 @@ class LoadReaderTest {
         LoadFacts stored = load.facts();
         when(loads.load(FLIGHT_ID)).thenReturn(Optional.of(load));
         when(flights.findFlightFacts(FLIGHT_ID)).thenReturn(Optional.of(facts(REGISTRATION, "ATH", STD.plusMinutes(30))));
-        when(policy.currentPolicy()).thenReturn(new OperationsPolicy(OperationsPolicy.Severity.HARD,
-                600, 30, new BigDecimal("10"), 7, 5));
+        when(policy.load()).thenReturn(Optional.of(new LoadPolicy(Severity.HARD,
+                600, 30, new BigDecimal("10"))));
 
         LoadFacts current = new DefaultGetLoadQuery(reader).getLoad(FLIGHT_ID);
 
@@ -72,8 +73,8 @@ class LoadReaderTest {
         var events = load.getDomainEvents();
         when(loads.load(FLIGHT_ID)).thenReturn(Optional.of(load));
         when(flights.findFlightFacts(FLIGHT_ID)).thenReturn(Optional.of(facts(new AircraftRegistration("SXBBB"), "FRA", STD.plusHours(1))));
-        when(policy.currentPolicy()).thenReturn(new OperationsPolicy(OperationsPolicy.Severity.SOFT,
-                600, 30, new BigDecimal("5"), 7, 5));
+        when(policy.load()).thenReturn(Optional.of(new LoadPolicy(Severity.SOFT,
+                600, 30, new BigDecimal("5"))));
         when(aircraft.floorPlanFor(REGISTRATION)).thenReturn(Optional.of(FLOOR_PLAN));
 
         LoadFacts current = new DefaultGetLoadQuery(reader).getLoad(FLIGHT_ID);

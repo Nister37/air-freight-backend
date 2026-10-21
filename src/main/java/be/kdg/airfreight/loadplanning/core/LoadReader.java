@@ -1,7 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.FlightId;
-import be.kdg.airfreight.common.PolicyQuery;
 import be.kdg.airfreight.loadplanning.LoadNotFoundException;
 import be.kdg.airfreight.loadplanning.domain.LoadStatus;
 import be.kdg.airfreight.loadplanning.domain.LoadView;
@@ -16,12 +15,12 @@ import java.util.List;
 class LoadReader {
     private final LoadLoadPort loadPort;
     private final FlightRequestPort flights;
-    private final PolicyQuery policyQuery;
+    private final LoadPolicyReader policyReader;
 
-    LoadReader(LoadLoadPort loadPort, FlightRequestPort flights, PolicyQuery policyQuery) {
+    LoadReader(LoadLoadPort loadPort, FlightRequestPort flights, LoadPolicyReader policyReader) {
         this.loadPort = loadPort;
         this.flights = flights;
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     LoadView required(FlightId id) {
@@ -29,7 +28,7 @@ class LoadReader {
                 .orElseThrow(() -> new LoadNotFoundException("No load for flight " + id.key())).view();
         var facts = flights.findFlightFacts(id)
                 .orElseThrow(() -> new LoadNotFoundException("Flight no longer exists: " + id.key()));
-        var policy = policyQuery.currentPolicy();
+        var policy = policyReader.current();
         if (stored.status() == LoadStatus.FINAL) return stored;
 
         LoadingWindow window = LoadingWindow.beforeDeparture(facts.scheduledDeparture(), facts.estimatedDeparture(),

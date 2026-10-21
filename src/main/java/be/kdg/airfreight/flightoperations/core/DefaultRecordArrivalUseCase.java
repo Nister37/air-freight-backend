@@ -16,19 +16,19 @@ import org.springframework.transaction.annotation.Transactional;
 class DefaultRecordArrivalUseCase implements RecordArrivalUseCase {
     private final FlightLookup flightLookup;
     private final List<FlightUpdatePort> updatePorts;
-    private final PolicyQuery policyQuery;
+    private final FlightPolicyReader policyReader;
 
-    DefaultRecordArrivalUseCase(FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, PolicyQuery policyQuery) {
+    DefaultRecordArrivalUseCase(FlightLookup flightLookup, List<FlightUpdatePort> updatePorts, FlightPolicyReader policyReader) {
         this.flightLookup = flightLookup;
         this.updatePorts = List.copyOf(updatePorts);
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_flight-planner')")
     public FlightFacts recordArrival(RecordActualTimeCommand command) {
         Flight flight = flightLookup.required(command.flightId());
-        flight.recordArrival(command.actualTime(), LocalDateTime.now(ZoneOffset.UTC), policyQuery.currentPolicy().actualTimeToleranceMinutes());
+        flight.recordArrival(command.actualTime(), LocalDateTime.now(ZoneOffset.UTC), policyReader.current().actualTimeToleranceMinutes());
         return save(flight);
     }
 

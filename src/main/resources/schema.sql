@@ -35,6 +35,25 @@ CREATE TABLE IF NOT EXISTS pm_message (
     body TEXT NOT NULL,
     UNIQUE (source_event_id, kind)
 );
+CREATE TABLE IF NOT EXISTS fo_policy (
+    id INTEGER PRIMARY KEY,
+    version BIGINT,
+    flight_retention_days INTEGER NOT NULL,
+    actual_time_tolerance_minutes INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS lp_policy (
+    id INTEGER PRIMARY KEY,
+    version BIGINT,
+    offloading_constraint VARCHAR(255) NOT NULL,
+    loading_window_opening_minutes INTEGER NOT NULL,
+    loading_window_closing_minutes INTEGER NOT NULL,
+    maximum_lateral_weight_difference_percent NUMERIC(19,6) NOT NULL
+);
+CREATE TABLE IF NOT EXISTS fo_feed_receipt (message_id UUID PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS lp_feed_receipt (message_id UUID PRIMARY KEY);
+
+-- Preserve settings and receipt IDs from installations with the former coordination module.
+-- The source tables stay intact; subsequent starts never overwrite module-owned settings.
 CREATE TABLE IF NOT EXISTS oc_policy (
     id INTEGER PRIMARY KEY,
     version BIGINT,
@@ -46,6 +65,27 @@ CREATE TABLE IF NOT EXISTS oc_policy (
     actual_time_tolerance_minutes INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS oc_feed_receipt (message_id UUID PRIMARY KEY);
+
+INSERT INTO fo_policy (id, version, flight_retention_days, actual_time_tolerance_minutes)
+SELECT legacy.id, COALESCE(legacy.version, 0), legacy.flight_retention_days, legacy.actual_time_tolerance_minutes
+FROM oc_policy legacy
+WHERE legacy.id = 1 AND NOT EXISTS (SELECT 1 FROM fo_policy current_policy WHERE current_policy.id = legacy.id);
+
+INSERT INTO lp_policy (id, version, offloading_constraint, loading_window_opening_minutes,
+                       loading_window_closing_minutes, maximum_lateral_weight_difference_percent)
+SELECT legacy.id, COALESCE(legacy.version, 0), legacy.offloading_constraint, legacy.loading_window_opening_minutes,
+       legacy.loading_window_closing_minutes, legacy.maximum_lateral_weight_difference_percent
+FROM oc_policy legacy
+WHERE legacy.id = 1 AND NOT EXISTS (SELECT 1 FROM lp_policy current_policy WHERE current_policy.id = legacy.id);
+
+-- Legacy receipts contain no feed type. Copy each ID to both consumers to prevent replay.
+INSERT INTO fo_feed_receipt (message_id)
+SELECT legacy.message_id FROM oc_feed_receipt legacy
+WHERE NOT EXISTS (SELECT 1 FROM fo_feed_receipt current_receipt WHERE current_receipt.message_id = legacy.message_id);
+
+INSERT INTO lp_feed_receipt (message_id)
+SELECT legacy.message_id FROM oc_feed_receipt legacy
+WHERE NOT EXISTS (SELECT 1 FROM lp_feed_receipt current_receipt WHERE current_receipt.message_id = legacy.message_id);
 
 CREATE TABLE IF NOT EXISTS lp_load (
                                        id UUID PRIMARY KEY,

@@ -1,29 +1,56 @@
 # Log in through authentication.http with the admin environment first.
-# Run all three requests in order to restore the original policy.
+# Run each policy's read, update and restore requests in order.
 
-### Read and save the current policy
-GET {{baseUrl}}/api/policy
+### Read and save the current flight policy
+GET {{baseUrl}}/api/flights/policy
 Authorization: Bearer {{accessToken}}
 
 > {%
-    client.test("Policy is returned", function () { client.assert(response.status === 200); });
-    client.global.set("originalPolicy", JSON.stringify(response.body));
+    client.test("Flight policy is returned", function () { client.assert(response.status === 200); });
+    client.global.set("originalFlightPolicy", JSON.stringify(response.body));
 %}
 
-### Update policy
-PUT {{baseUrl}}/api/policy
+### Update flight policy
+PUT {{baseUrl}}/api/flights/policy
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-{"offloadingConstraint":"SOFT","loadingWindowOpeningMinutes":600,"loadingWindowClosingMinutes":30,"maximumLateralWeightDifferencePercent":8,"flightRetentionDays":7,"actualTimeToleranceMinutes":10}
+{"flightRetentionDays":10,"actualTimeToleranceMinutes":10}
 
-> {% client.test("Admin updates policy", function () { client.assert(response.status === 200 && response.body.offloadingConstraint === "SOFT"); }); %}
+> {% client.test("Admin updates flight policy", function () { client.assert(response.status === 200 && response.body.actualTimeToleranceMinutes === 10); }); %}
 
-### Restore the saved policy
-PUT {{baseUrl}}/api/policy
+### Restore the saved flight policy
+PUT {{baseUrl}}/api/flights/policy
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
-{{originalPolicy}}
+{{originalFlightPolicy}}
 
-> {% client.test("Original policy is restored", function () { client.assert(response.status === 200); }); %}
+> {% client.test("Original flight policy is restored", function () { client.assert(response.status === 200); }); %}
+
+### Read and save the current load policy
+GET {{baseUrl}}/api/loads/policy
+Authorization: Bearer {{accessToken}}
+
+> {%
+    client.test("Load policy is returned", function () { client.assert(response.status === 200); });
+    client.global.set("originalLoadPolicy", JSON.stringify(response.body));
+%}
+
+### Update load policy
+PUT {{baseUrl}}/api/loads/policy
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{"offloadingConstraint":"SOFT","loadingWindowOpeningMinutes":600,"loadingWindowClosingMinutes":30,"maximumLateralWeightDifferencePercent":8}
+
+> {% client.test("Admin updates load policy", function () { client.assert(response.status === 200 && response.body.offloadingConstraint === "SOFT"); }); %}
+
+### Restore the saved load policy
+PUT {{baseUrl}}/api/loads/policy
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{{originalLoadPolicy}}
+
+> {% client.test("Original load policy is restored", function () { client.assert(response.status === 200); }); %}

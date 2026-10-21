@@ -2,12 +2,10 @@ package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.common.OperationsPolicy;
-import be.kdg.airfreight.common.PolicyQuery;
+import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.LoadRules;
-import be.kdg.airfreight.loadplanning.domain.Severity;
 import be.kdg.airfreight.loadplanning.port.in.usecase.CheckLoadUseCase;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
@@ -26,14 +24,14 @@ class DefaultCheckLoadUseCase implements CheckLoadUseCase {
     private final LoadLookup loadLookup;
     private final List<LoadUpdatePort> updatePorts;
     private final AircraftLoadPort aircraftPort;
-    private final PolicyQuery policyQuery;
+    private final LoadPolicyReader policyReader;
 
     DefaultCheckLoadUseCase(LoadLookup loadLookup, List<LoadUpdatePort> updatePorts,
-                            AircraftLoadPort aircraftPort, PolicyQuery policyQuery) {
+                            AircraftLoadPort aircraftPort, LoadPolicyReader policyReader) {
         this.loadLookup = loadLookup;
         this.updatePorts = List.copyOf(updatePorts);
         this.aircraftPort = aircraftPort;
-        this.policyQuery = policyQuery;
+        this.policyReader = policyReader;
     }
 
     @Override
@@ -45,9 +43,9 @@ class DefaultCheckLoadUseCase implements CheckLoadUseCase {
     }
 
     private LoadRules currentRules() {
-        OperationsPolicy policy = policyQuery.currentPolicy();
+        LoadPolicy policy = policyReader.current();
         return new LoadRules(
-                Severity.valueOf(policy.offloadingConstraint().name()),
+                policy.offloadingConstraint(),
                 policy.maximumLateralWeightDifferencePercent());
     }
 
