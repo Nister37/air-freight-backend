@@ -2,10 +2,9 @@ package be.kdg.airfreight.simulation.adapter.out.rabbit;
 
 import be.kdg.airfreight.common.CargoBooking;
 import be.kdg.airfreight.common.FlightSchedule;
-import be.kdg.airfreight.simulation.port.out.SimulationFeedPort;
+import be.kdg.airfreight.simulation.port.out.SimulationMessagePublisherPort;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +15,10 @@ import java.util.UUID;
 
 @Component
 @Profile("simulation & !prod & !production")
-class RabbitSimulationFeedAdapter implements SimulationFeedPort {
+class SimulationRabbitPublisherAdapter implements SimulationMessagePublisherPort {
     private final RabbitTemplate rabbit;
 
-    RabbitSimulationFeedAdapter(@Qualifier("rabbitTemplate") RabbitTemplate rabbit) { this.rabbit = rabbit; }
+    SimulationRabbitPublisherAdapter(RabbitTemplate rabbitTemplate) { this.rabbit = rabbitTemplate; }
 
     @Override
     public void publishSchedule(UUID messageId, FlightSchedule schedule) {

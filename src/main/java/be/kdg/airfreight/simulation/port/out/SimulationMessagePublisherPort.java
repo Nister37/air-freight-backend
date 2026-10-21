@@ -5,7 +5,7 @@ import be.kdg.airfreight.common.FlightSchedule;
 
 import java.util.UUID;
 
-public interface SimulationFeedPort {
+public interface SimulationMessagePublisherPort {
     void publishSchedule(UUID messageId, FlightSchedule schedule);
     void publishCargo(CargoBooking booking);
 }
