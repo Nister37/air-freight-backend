@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Order(2)
-class SpringLoadEventPublisherAdapter implements LoadUpdatePort {
+class LoadEventPublisherAdapter implements LoadUpdatePort {
 
     private final ApplicationEventPublisher publisher;
 
-    SpringLoadEventPublisherAdapter(ApplicationEventPublisher publisher) {
+    LoadEventPublisherAdapter(ApplicationEventPublisher publisher) {
         this.publisher = publisher;
     }
 

@@ -7,9 +7,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.*;
+import java.util.stream.Stream;
 
 /** The derived dates belong to this value and are not recomputed on redelivery. */
-public record MvtTelegram(FlightNumber flightNumber, LocalDate scheduledDepartureDate,
+public record
+MvtTelegram(FlightNumber flightNumber, LocalDate scheduledDepartureDate,
                           AircraftRegistration aircraftRegistration, Airport airport,
                           MessageKind kind, LocalDateTime movementTime) {
     private static final Pattern TEXT = Pattern.compile(
@@ -41,7 +43,7 @@ public record MvtTelegram(FlightNumber flightNumber, LocalDate scheduledDepartur
         if (hour > 23 || minute > 59) throw new IllegalArgumentException("Invalid MVT time");
         LocalTime time = LocalTime.of(hour, minute);
         LocalDate flightDate = new IataDay(day).resolve(readingDate);
-        LocalDateTime movement = java.util.stream.Stream.of(readingDate.minusDays(1), readingDate, readingDate.plusDays(1))
+        LocalDateTime movement = Stream.of(readingDate.minusDays(1), readingDate, readingDate.plusDays(1))
                 .map(date -> date.atTime(time))
                 .min(Comparator.comparingLong((LocalDateTime timeCandidate) -> Math.abs(ChronoUnit.MILLIS.between(readAt, timeCandidate)))
                         .thenComparing(Comparator.reverseOrder())).orElseThrow();

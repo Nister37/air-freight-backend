@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Order(2)
-class SpringFlightEventPublisherAdapter implements FlightUpdatePort {
+class FlightEventPublisherAdapter implements FlightUpdatePort {
     private final ApplicationEventPublisher publisher;
-    SpringFlightEventPublisherAdapter(ApplicationEventPublisher publisher) { this.publisher = publisher; }
+    FlightEventPublisherAdapter(ApplicationEventPublisher publisher) { this.publisher = publisher; }
     @Override
     public void update(Flight flight) {
         flight.getDomainEvents().forEach(publisher::publishEvent);

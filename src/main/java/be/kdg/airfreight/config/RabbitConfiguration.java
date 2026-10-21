@@ -18,7 +18,6 @@ class RabbitConfiguration {
 
     // Boot backs off when the telegram template exists, so configure the JSON default explicitly.
     @Bean
-    @Primary
     RabbitTemplate rabbitTemplate(RabbitTemplateConfigurer configurer, ConnectionFactory connectionFactory) {
         RabbitTemplate template = new RabbitTemplate();
         configurer.configure(template, connectionFactory);

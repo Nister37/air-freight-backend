@@ -5,20 +5,18 @@ import be.kdg.airfreight.partnermessaging.domain.PartnerMessage;
 import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import java.nio.charset.StandardCharsets;
 
 @Component
-class RabbitPartnerMessageAdapter {
+class PartnerMessageRabbitPublisherAdapter {
     private final RabbitTemplate rabbit;
     private final RabbitTemplate mvtRabbit;
 
-    RabbitPartnerMessageAdapter(@Qualifier("rabbitTemplate") RabbitTemplate rabbit,
-                               @Qualifier("mvtRabbitTemplate") RabbitTemplate mvtRabbit) {
-        this.rabbit = rabbit;
-        this.mvtRabbit = mvtRabbit;
+    PartnerMessageRabbitPublisherAdapter(RabbitTemplate rabbitTemplate, RabbitTemplate mvtRabbitTemplate) {
+        this.rabbit = rabbitTemplate;
+        this.mvtRabbit = mvtRabbitTemplate;
     }
 
     @ApplicationModuleListener

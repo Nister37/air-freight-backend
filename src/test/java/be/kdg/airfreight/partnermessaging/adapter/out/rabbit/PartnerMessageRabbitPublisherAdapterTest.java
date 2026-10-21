@@ -20,7 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class RabbitPartnerMessageAdapterTest {
+class PartnerMessageRabbitPublisherAdapterTest {
     @Test
     void sendsTheSavedFlmAsJsonWithItsMessageIdentity() {
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
@@ -30,7 +30,7 @@ class RabbitPartnerMessageAdapterTest {
         PartnerMessage flm = new PartnerMessage(id, UUID.randomUUID(), LocalDateTime.of(2026, 10, 11, 10, 0), 1,
                 new FlightId(new FlightNumber("HJ221"), LocalDate.of(2026, 10, 11), new Airport("BRU")), MessageKind.FLM, body);
 
-        new RabbitPartnerMessageAdapter(rabbit, telegrams).publish(new PartnerMessageCreatedEvent(flm));
+        new PartnerMessageRabbitPublisherAdapter(rabbit, telegrams).publish(new PartnerMessageCreatedEvent(flm));
 
         ArgumentCaptor<Message> sent = ArgumentCaptor.forClass(Message.class);
         verify(rabbit).send(eq("airfreight.partner-messages"), eq("flm"), sent.capture());

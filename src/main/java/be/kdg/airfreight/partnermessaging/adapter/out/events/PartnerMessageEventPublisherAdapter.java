@@ -6,10 +6,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 @Component
-class SpringPartnerMessageEventPublisherAdapter implements PartnerMessageEventPort {
+class PartnerMessageEventPublisherAdapter implements PartnerMessageEventPort {
     private final ApplicationEventPublisher publisher;
 
-    SpringPartnerMessageEventPublisherAdapter(ApplicationEventPublisher publisher) {
+    PartnerMessageEventPublisherAdapter(ApplicationEventPublisher publisher) {
         this.publisher = publisher;
     }
 

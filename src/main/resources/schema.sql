@@ -116,3 +116,9 @@ CREATE TABLE IF NOT EXISTS event_publication (
     completion_attempts INTEGER,
     last_resubmission_date TIMESTAMP WITH TIME ZONE
 );
+
+-- Preserve pending publications when the renamed publisher uses its default listener ID.
+UPDATE event_publication
+SET listener_id = 'be.kdg.airfreight.partnermessaging.adapter.out.rabbit.PartnerMessageRabbitPublisherAdapter.publish(be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent)'
+WHERE listener_id = 'be.kdg.airfreight.partnermessaging.adapter.out.rabbit.RabbitPartnerMessageAdapter.publish(be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent)'
+  AND completion_date IS NULL;
