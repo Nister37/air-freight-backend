@@ -36,7 +36,7 @@ class LoadTest {
     }
 
     private LoadCheck check(CheckKind kind, LoadRules rules) {
-        return load.check(FLOOR_PLAN, rules, NOW).stream()
+        return load.check(FLOOR_PLAN, LoadChecks.standard(rules), NOW).stream()
                 .filter(result -> result.kind() == kind).findFirst().orElseThrow();
     }
 
@@ -201,7 +201,7 @@ class LoadTest {
         place(FIRST, "1000", "ATH", "CL");
         place(SECOND, "1101", "ATH", "CR");
 
-        assertThrows(IllegalStateException.class, () -> load.finalise(true, FLOOR_PLAN, SOFT_RULES, NOW));
+        assertThrows(IllegalStateException.class, () -> load.finalise(true, FLOOR_PLAN, LoadChecks.standard(SOFT_RULES), NOW));
 
         assertEquals(LoadStatus.OPEN, load.status());
     }
@@ -210,9 +210,9 @@ class LoadTest {
     void softWarningsRequireConfirmationAndTheFinalLoadCannotChange() {
         place(FIRST, "1000", "ATH", "A1");
         load.book(uld(SECOND, "1000", WeightUnit.KG, "ATH"), NOW);
-        assertThrows(IllegalStateException.class, () -> load.finalise(false, FLOOR_PLAN, HARD_RULES, NOW));
+        assertThrows(IllegalStateException.class, () -> load.finalise(false, FLOOR_PLAN, LoadChecks.standard(HARD_RULES), NOW));
 
-        load.finalise(true, FLOOR_PLAN, HARD_RULES, NOW);
+        load.finalise(true, FLOOR_PLAN, LoadChecks.standard(HARD_RULES), NOW);
 
         assertEquals(LoadStatus.FINAL, load.status());
         assertThrows(IllegalStateException.class, () -> load.removePlacement(FIRST, NOW));

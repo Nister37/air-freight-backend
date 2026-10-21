@@ -68,7 +68,7 @@ class LoadReaderTest {
     @Test
     void finalLoadQueriesKeepTheFrozenDataAfterFlightAndPolicyChanges() {
         Load load = checkedLoad();
-        load.finalise(false, FLOOR_PLAN, new LoadRules(Severity.HARD, new BigDecimal("10")), NOW);
+        load.finalise(false, FLOOR_PLAN, LoadChecks.standard(new LoadRules(Severity.HARD, new BigDecimal("10"))), NOW);
         LoadFacts frozen = load.facts();
         var events = load.getDomainEvents();
         when(loads.load(FLIGHT_ID)).thenReturn(Optional.of(load));
@@ -97,7 +97,7 @@ class LoadReaderTest {
             load.book(ULD.of(code, new Weight(new BigDecimal("1000"), WeightUnit.KG), new Airport("ATH")), NOW);
             load.place(code, FLOOR_PLAN.find(positions.get(i)).orElseThrow(), FLOOR_PLAN, NOW);
         }
-        load.check(FLOOR_PLAN, new LoadRules(Severity.HARD, new BigDecimal("10")), NOW);
+        load.check(FLOOR_PLAN, LoadChecks.standard(new LoadRules(Severity.HARD, new BigDecimal("10"))), NOW);
         return load;
     }
 

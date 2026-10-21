@@ -3,6 +3,7 @@ package be.kdg.airfreight.loadplanning.core;
 import be.kdg.airfreight.common.LoadFacts;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.LoadChecks;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.ULDCode;
@@ -43,8 +44,8 @@ class DefaultRemovePlacementUseCase implements RemovePlacementUseCase {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         load.removePlacement(new ULDCode(command.uldCode()), now);
         var policy = policyReader.current();
-        load.check(floorPlan, new LoadRules(policy.offloadingConstraint(),
-                policy.maximumLateralWeightDifferencePercent()), now);
+        load.check(floorPlan, LoadChecks.standard(new LoadRules(policy.offloadingConstraint(),
+                policy.maximumLateralWeightDifferencePercent())), now);
         return save(load);
     }
 

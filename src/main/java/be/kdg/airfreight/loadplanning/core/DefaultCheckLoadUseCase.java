@@ -6,6 +6,7 @@ import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.LoadChecks;
 import be.kdg.airfreight.loadplanning.port.in.usecase.CheckLoadUseCase;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
@@ -38,15 +39,15 @@ class DefaultCheckLoadUseCase implements CheckLoadUseCase {
     @PreAuthorize("hasAuthority('ROLE_load-planner')")
     public LoadFacts checkLoad(FlightId id){
         Load load = loadLookup.required(id);
-        load.check(floorPlanFor(load), currentRules(), LocalDateTime.now(ZoneOffset.UTC));
+        load.check(floorPlanFor(load), currentChecks(), LocalDateTime.now(ZoneOffset.UTC));
         return save(load);
     }
 
-    private LoadRules currentRules() {
+    private LoadChecks currentChecks() {
         LoadPolicy policy = policyReader.current();
-        return new LoadRules(
+        return LoadChecks.standard(new LoadRules(
                 policy.offloadingConstraint(),
-                policy.maximumLateralWeightDifferencePercent());
+                policy.maximumLateralWeightDifferencePercent()));
     }
 
     private FloorPlan floorPlanFor(Load load) {

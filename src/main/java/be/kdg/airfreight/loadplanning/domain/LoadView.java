@@ -38,7 +38,7 @@ public record LoadView(FlightId flightId, AircraftRegistration aircraftRegistrat
     }
 
     public List<OffloadingBlockage> blockages(FloorPlan floorPlan) {
-        return new LoadChecks(ulds, placements, destinationAirport).blockages(floorPlan);
+        return new OffloadingCheckRule().blockages(this, floorPlan);
     }
 
     private Optional<Position> positionOf(ULDCode code) {

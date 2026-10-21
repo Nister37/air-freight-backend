@@ -40,8 +40,8 @@ class DefaultMoveULDUseCase implements MoveULDUseCase {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         load.move(new ULDCode(command.uldCode()), position, floorPlan, now);
         var policy = policyReader.current();
-        load.check(floorPlan, new LoadRules(policy.offloadingConstraint(),
-                policy.maximumLateralWeightDifferencePercent()), now);
+        load.check(floorPlan, LoadChecks.standard(new LoadRules(policy.offloadingConstraint(),
+                policy.maximumLateralWeightDifferencePercent())), now);
         updatePorts.forEach(port -> port.update(load));
         return load.facts();
     }

@@ -5,6 +5,7 @@ import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
 import be.kdg.airfreight.loadplanning.domain.FloorPlan;
 import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.LoadChecks;
 import be.kdg.airfreight.loadplanning.port.in.command.FinaliseLoadCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.FinaliseLoadUseCase;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
@@ -38,16 +39,16 @@ class DefaultFinaliseLoadUseCase implements FinaliseLoadUseCase {
     @PreAuthorize("hasAuthority('ROLE_load-planner')")
     public LoadFacts finaliseLoad(FinaliseLoadCommand command) {
         Load load = loadLookup.required(command.flightId());
-        load.finalise(command.confirmWarnings(), floorPlanFor(load), currentRules(),
+        load.finalise(command.confirmWarnings(), floorPlanFor(load), currentChecks(),
                 LocalDateTime.now(ZoneOffset.UTC));
         return save(load);
     }
 
-    private LoadRules currentRules() {
+    private LoadChecks currentChecks() {
         LoadPolicy policy = policyReader.current();
-        return new LoadRules(
+        return LoadChecks.standard(new LoadRules(
                 policy.offloadingConstraint(),
-                policy.maximumLateralWeightDifferencePercent());
+                policy.maximumLateralWeightDifferencePercent()));
     }
 
     private FloorPlan floorPlanFor(Load load) {

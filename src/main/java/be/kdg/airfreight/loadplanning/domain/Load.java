@@ -159,14 +159,14 @@ public final class Load {
     // CHECKS
     //Runs all load checks against current placements and stores the results. Only during the loading window.
     //Read-only for the planner; doesn't block anything by itself.
-    public List<LoadCheck> check(FloorPlan floorPlan, LoadRules rules, LocalDateTime now){
+    public List<LoadCheck> check(FloorPlan floorPlan, LoadChecks loadChecks, LocalDateTime now){
         Objects.requireNonNull(floorPlan);
-        Objects.requireNonNull(rules);
+        Objects.requireNonNull(loadChecks);
         Objects.requireNonNull(now, "now is required");
         requireOpen();
         requireWindowOpen(now);
 
-        List<LoadCheck> results = new LoadChecks(ulds, placements, destinationAirport).check(floorPlan, rules);
+        List<LoadCheck> results = loadChecks.check(view(), floorPlan);
         checks.clear();
         checks.addAll(results);
         return results;
@@ -178,14 +178,14 @@ public final class Load {
 
     //finalise
     //Locks the load: re-runs checks, refuses on HARD failures, requires confirmation for SOFT failures, then marks FINAL and records LoadFinalisedEvent.
-    public void finalise(boolean confirmWarnings, FloorPlan floorPlan, LoadRules rules, LocalDateTime now) {
+    public void finalise(boolean confirmWarnings, FloorPlan floorPlan, LoadChecks loadChecks, LocalDateTime now) {
         Objects.requireNonNull(floorPlan);
-        Objects.requireNonNull(rules);
+        Objects.requireNonNull(loadChecks);
         Objects.requireNonNull(now, "now is required");
         requireOpen();
         requireWindowOpen(now);
 
-        List<LoadCheck> results = check(floorPlan, rules, now);   // always re-run — never trust stored results
+        List<LoadCheck> results = check(floorPlan, loadChecks, now);   // always re-run — never trust stored results
 
         List<String> blocking = results.stream().filter(LoadCheck::isBlocking).map(LoadCheck::explanation).toList();
         if (!blocking.isEmpty()) {
