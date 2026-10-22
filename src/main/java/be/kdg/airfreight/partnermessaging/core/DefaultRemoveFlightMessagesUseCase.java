@@ -1,13 +1,10 @@
 package be.kdg.airfreight.partnermessaging.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.common.events.FlightRemovedEvent;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.partnermessaging.port.in.usecase.RemoveFlightMessagesUseCase;
-import be.kdg.airfreight.partnermessaging.port.out.*;
+import be.kdg.airfreight.partnermessaging.port.out.MessageStorePort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -19,7 +16,7 @@ class DefaultRemoveFlightMessagesUseCase implements RemoveFlightMessagesUseCase 
     }
 
     @Override
-    public void removeFlightMessages(FlightRemovedEvent event) {
-        store.removeForFlight(event.flightId());
+    public void removeFlightMessages(FlightId flightId) {
+        store.removeForFlight(flightId);
     }
 }

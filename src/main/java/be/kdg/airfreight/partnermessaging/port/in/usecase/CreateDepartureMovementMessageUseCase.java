@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.port.in.usecase;
 
-import be.kdg.airfreight.common.events.FlightDepartedEvent;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateActualMovementMessageCommand;
 
 public interface CreateDepartureMovementMessageUseCase {
-    void createDepartureMovementMessage(FlightDepartedEvent event);
+    void createDepartureMovementMessage(CreateActualMovementMessageCommand command);
 }

@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.port.in.usecase;
 
-import be.kdg.airfreight.common.events.FlightRemovedEvent;
+import be.kdg.airfreight.common.FlightId;
 
 public interface RemoveFlightMessagesUseCase {
-    void removeFlightMessages(FlightRemovedEvent event);
+    void removeFlightMessages(FlightId flightId);
 }

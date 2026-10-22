@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.port.in.usecase;
 
-import be.kdg.airfreight.common.events.FlightTimesChangedEvent;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateEstimatedMovementMessagesCommand;
 
 public interface CreateEstimatedMovementMessagesUseCase {
-    void createEstimatedMovementMessages(FlightTimesChangedEvent event);
+    void createEstimatedMovementMessages(CreateEstimatedMovementMessagesCommand command);
 }

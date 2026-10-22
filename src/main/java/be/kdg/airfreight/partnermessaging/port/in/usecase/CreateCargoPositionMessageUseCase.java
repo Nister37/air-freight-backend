@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.port.in.usecase;
 
-import be.kdg.airfreight.common.events.LoadFinalisedEvent;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateCargoPositionMessageCommand;
 
 public interface CreateCargoPositionMessageUseCase {
-    void createCargoPositionMessage(LoadFinalisedEvent event);
+    void createCargoPositionMessage(CreateCargoPositionMessageCommand command);
 }

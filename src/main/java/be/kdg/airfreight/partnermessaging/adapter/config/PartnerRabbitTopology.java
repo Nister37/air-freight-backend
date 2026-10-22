@@ -7,6 +7,12 @@ import org.springframework.context.annotation.*;
 public class PartnerRabbitTopology {
     public static final String EXCHANGE = "airfreight.partner-messages";
     public static final String QUEUE = "airfreight.partners";
+    public static final String FLM = "flm";
+    public static final String CPM = "cpm";
+    public static final String MVT_ED = "mvt.ed";
+    public static final String MVT_EA = "mvt.ea";
+    public static final String MVT_AD = "mvt.ad";
+    public static final String MVT_AA = "mvt.aa";
 
     private static final String ALL_ROUTING_KEYS = "#";
 

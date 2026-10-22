@@ -1,13 +1,10 @@
 package be.kdg.airfreight.partnermessaging.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.common.events.FlightTimesChangedEvent;
 import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateEstimatedMovementMessagesCommand;
 import be.kdg.airfreight.partnermessaging.port.in.usecase.CreateEstimatedMovementMessagesUseCase;
-import be.kdg.airfreight.partnermessaging.port.out.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -19,8 +16,14 @@ class DefaultCreateEstimatedMovementMessagesUseCase implements CreateEstimatedMo
     }
 
     @Override
-    public void createEstimatedMovementMessages(FlightTimesChangedEvent event) {
-        if (event.departureChanged()) messages.createTelegram(event, event.flight(), MessageKind.MVT_ED, event.flight().estimatedDeparture());
-        if (event.arrivalChanged()) messages.createTelegram(event, event.flight(), MessageKind.MVT_EA, event.flight().estimatedArrival());
+    public void createEstimatedMovementMessages(CreateEstimatedMovementMessagesCommand command) {
+        if (command.departureChanged()) {
+            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
+                    MessageKind.MVT_ED, command.flight().estimatedDeparture());
+        }
+        if (command.arrivalChanged()) {
+            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
+                    MessageKind.MVT_EA, command.flight().estimatedArrival());
+        }
     }
 }

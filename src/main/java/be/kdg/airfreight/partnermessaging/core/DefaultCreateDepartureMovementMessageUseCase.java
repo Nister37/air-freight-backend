@@ -1,13 +1,10 @@
 package be.kdg.airfreight.partnermessaging.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.common.events.FlightDepartedEvent;
 import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateActualMovementMessageCommand;
 import be.kdg.airfreight.partnermessaging.port.in.usecase.CreateDepartureMovementMessageUseCase;
-import be.kdg.airfreight.partnermessaging.port.out.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -19,7 +16,8 @@ class DefaultCreateDepartureMovementMessageUseCase implements CreateDepartureMov
     }
 
     @Override
-    public void createDepartureMovementMessage(FlightDepartedEvent event) {
-        messages.createTelegram(event, event.flight(), MessageKind.MVT_AD, event.flight().actualDeparture());
+    public void createDepartureMovementMessage(CreateActualMovementMessageCommand command) {
+        messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
+                MessageKind.MVT_AD, command.flight().actualDeparture());
     }
 }
