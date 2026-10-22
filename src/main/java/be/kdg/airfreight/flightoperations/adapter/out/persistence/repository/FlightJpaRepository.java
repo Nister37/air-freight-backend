@@ -11,7 +11,7 @@ public interface FlightJpaRepository extends JpaRepository<FlightJpaEntity, Stri
 
     @Query("""
             select flight from FlightJpaEntity flight
-            where (:date is null or flight.scheduledDepartureDate = :date)
+            where flight.scheduledDepartureDate = coalesce(:date, flight.scheduledDepartureDate)
               and (:number is null or flight.flightNumber = :number)
               and (:departureAirport is null or flight.departureAirport = :departureAirport)
               and (:arrivalAirport is null or flight.arrivalAirport = :arrivalAirport)

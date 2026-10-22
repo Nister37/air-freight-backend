@@ -1,6 +1,7 @@
 package be.kdg.airfreight.config;
 
 import be.kdg.airfreight.common.events.DomainEvent;
+import be.kdg.airfreight.common.messages.SsmMessage;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -13,7 +14,7 @@ class RabbitConfiguration {
     @Bean
     @Primary
     JacksonJsonMessageConverter jsonMessageConverter(JsonMapper mapper) {
-        return new JacksonJsonMessageConverter(mapper, DomainEvent.class.getPackageName());
+        return new JacksonJsonMessageConverter(mapper, DomainEvent.class.getPackageName(), SsmMessage.class.getPackageName());
     }
 
     // Boot backs off when the telegram template exists, so configure the JSON default explicitly.

@@ -2,15 +2,14 @@ package be.kdg.airfreight.simulation.adapter.out.rabbit;
 
 import be.kdg.airfreight.common.CargoBooking;
 import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.common.messages.SsmMessage;
+import be.kdg.airfreight.common.messages.UldMessage;
 import be.kdg.airfreight.simulation.port.out.SimulationMessagePublisherPort;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.*;
-import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -43,12 +42,4 @@ class SimulationRabbitPublisherAdapter implements SimulationMessagePublisherPort
         });
     }
 
-    // The external feed contract uses plain JSON fields, independently of receiver Java classes.
-    private record SsmMessage(UUID messageId, LocalDate from, LocalDate to, Set<DayOfWeek> weekdays,
-                              LocalTime departureTime, LocalTime arrivalTime, String flightNumber,
-                              String departureAirport, String arrivalAirport, String aircraftRegistration) { }
-
-    private record UldMessage(UUID messageId, String flightNumber, int departureDay,
-                              String departureAirport, String uldCode, BigDecimal weight, String unit,
-                              String destination) { }
 }
