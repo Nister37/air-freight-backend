@@ -19,11 +19,13 @@ info:
     Local issuer: http://localhost:8380/realms/airfreight. The public browser client
     airfreight-web uses Authorization Code with PKCE. The confidential airfreight-api
     client supports the course HTTP testers; its generated secret is kept in the
-    ignored private environment file. Development users planner, loader and admin
-    have password local123.
+    ignored private environment file. Development users and their fixture
+    credentials are described in src/test/http/authentication.http.
 
     Date-times are UTC LocalDateTime strings without Z or an offset. They are
     described as strings rather than RFC 3339 date-time values to match the API.
+    Browser clients must explicitly interpret them as UTC and convert display
+    and user input to/from Europe/Brussels. Flight identity dates stay in UTC.
 
 servers:
   - url: http://localhost:8080
@@ -578,6 +580,10 @@ components:
         actualTimeToleranceMinutes: {type: integer, minimum: 0, default: 5}
     LoadPolicy:
       type: object
+      description: |
+        All settings are required. loadingWindowOpeningMinutes must be greater
+        than loadingWindowClosingMinutes. Saved changes apply to subsequent
+        operations; they do not reopen a final load.
       required: [offloadingConstraint, loadingWindowOpeningMinutes, loadingWindowClosingMinutes, maximumLateralWeightDifferencePercent]
       properties:
         offloadingConstraint: {type: string, enum: [HARD, SOFT], default: HARD}
@@ -624,10 +630,10 @@ components:
         destination: {$ref: '#/components/schemas/Airport'}
         loadingWindowOpensAt:
           allOf: [{$ref: '#/components/schemas/UtcLocalDateTime'}]
-          description: Scheduled departure minus the current policy opening offset.
+          description: For an open load, scheduled departure minus the current policy opening offset. Frozen after finalisation.
         loadingWindowClosesAt:
           allOf: [{$ref: '#/components/schemas/UtcLocalDateTime'}]
-          description: Estimated departure minus the current policy closing offset.
+          description: For an open load, estimated departure minus the current policy closing offset. Frozen after finalisation.
         finalised: {type: boolean}
         ulds:
           type: array
@@ -647,6 +653,7 @@ components:
         loadingWindowOpen: {type: boolean, description: True when the load is open and the current UTC time is inside its loading window.}
     FloorPlan:
       type: object
+      description: Current main-deck layout response. A different layout model also requires adapter and HTTP contract changes; a FloorPlan domain implementation alone is insufficient.
       required: [rows, nosePositions, tailPositions, positions, doorPosition]
       properties:
         rows:
