@@ -1,4 +1,4 @@
-package be.kdg.airfreight.loadplanning.domain;
+package be.kdg.airfreight.loadplanning.domain.enums;
 
 public enum Side {
     LEFT,

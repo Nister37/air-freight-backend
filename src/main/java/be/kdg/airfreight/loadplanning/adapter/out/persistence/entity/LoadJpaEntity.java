@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.adapter.out.persistence.entity;
 
-import be.kdg.airfreight.loadplanning.domain.LoadStatus;
+import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;

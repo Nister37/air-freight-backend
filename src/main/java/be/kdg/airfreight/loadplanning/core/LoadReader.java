@@ -2,7 +2,7 @@ package be.kdg.airfreight.loadplanning.core;
 
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.loadplanning.LoadNotFoundException;
-import be.kdg.airfreight.loadplanning.domain.LoadStatus;
+import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
 import be.kdg.airfreight.loadplanning.domain.LoadView;
 import be.kdg.airfreight.loadplanning.domain.LoadingWindow;
 import be.kdg.airfreight.loadplanning.port.out.FlightRequestPort;

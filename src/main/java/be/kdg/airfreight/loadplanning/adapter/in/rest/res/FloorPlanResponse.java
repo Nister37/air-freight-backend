@@ -1,4 +1,4 @@
-package be.kdg.airfreight.loadplanning.adapter.in.rest;
+package be.kdg.airfreight.loadplanning.adapter.in.rest.res;
 
 import java.util.List;
 

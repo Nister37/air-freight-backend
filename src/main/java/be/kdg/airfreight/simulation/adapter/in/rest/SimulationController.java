@@ -1,5 +1,8 @@
 package be.kdg.airfreight.simulation.adapter.in.rest;
 
+import be.kdg.airfreight.simulation.adapter.in.rest.req.CargoRequest;
+import be.kdg.airfreight.simulation.adapter.in.rest.req.ScheduleRequest;
+
 import be.kdg.airfreight.simulation.port.in.command.*;
 import be.kdg.airfreight.simulation.port.in.usecase.*;
 import org.springframework.context.annotation.Profile;

@@ -1,4 +1,4 @@
-package be.kdg.airfreight.simulation.adapter.in.rest;
+package be.kdg.airfreight.simulation.adapter.in.rest.req;
 
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
@@ -22,7 +22,7 @@ public record ScheduleRequest(LocalDate from, LocalDate to, Set<DayOfWeek> weekd
         }
     }
 
-    FlightSchedule schedule() {
+    public FlightSchedule schedule() {
         return new FlightSchedule(from, to, weekdays, departureTime, arrivalTime, new FlightNumber(flightNumber),
                 new Airport(departureAirport), new Airport(arrivalAirport), new AircraftRegistration(aircraftRegistration));
     }

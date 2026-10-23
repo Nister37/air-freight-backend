@@ -1,8 +1,8 @@
-package be.kdg.airfreight.loadplanning.adapter.in.rest;
+package be.kdg.airfreight.loadplanning.adapter.in.rest.req;
 
 import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
 import be.kdg.airfreight.loadplanning.port.in.command.UpdateLoadPolicyCommand;
-import be.kdg.airfreight.loadplanning.domain.Severity;
+import be.kdg.airfreight.loadplanning.domain.enums.Severity;
 import java.math.BigDecimal;
 
 public record UpdateLoadPolicyRequest(Severity offloadingConstraint, Integer loadingWindowOpeningMinutes,
@@ -13,7 +13,7 @@ public record UpdateLoadPolicyRequest(Severity offloadingConstraint, Integer loa
         }
     }
 
-    UpdateLoadPolicyCommand toCommand() {
+    public UpdateLoadPolicyCommand toCommand() {
         return new UpdateLoadPolicyCommand(new LoadPolicy(offloadingConstraint, loadingWindowOpeningMinutes, loadingWindowClosingMinutes, maximumLateralWeightDifferencePercent));
     }
 }

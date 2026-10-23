@@ -1,4 +1,4 @@
-package be.kdg.airfreight.loadplanning.domain;
+package be.kdg.airfreight.loadplanning.domain.enums;
 
 import java.math.BigDecimal;
 
@@ -12,7 +12,7 @@ public enum WeightUnit {
         this.kgFactor = kgFactor;
     }
 
-    BigDecimal toKg(BigDecimal amount) {
+    public BigDecimal toKg(BigDecimal amount) {
         return amount.multiply(kgFactor);
     }
 

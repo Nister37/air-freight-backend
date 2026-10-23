@@ -1,6 +1,6 @@
 # Extending the backend
 
-The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations.
+The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations. Import domain enums such as `CheckKind` and `Severity` from `loadplanning.domain.enums`, and `MessageKind` from `partnermessaging.domain.enums`.
 
 ## Other load checks
 

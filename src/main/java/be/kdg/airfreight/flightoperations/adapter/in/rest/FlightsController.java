@@ -1,5 +1,9 @@
 package be.kdg.airfreight.flightoperations.adapter.in.rest;
 
+import be.kdg.airfreight.flightoperations.adapter.in.rest.req.ActualTimeRequest;
+import be.kdg.airfreight.flightoperations.adapter.in.rest.req.CorrectDelayRequest;
+import be.kdg.airfreight.flightoperations.adapter.in.rest.req.RegisterDelayRequest;
+
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.flightoperations.port.in.command.CorrectDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.command.RecordActualTimeCommand;

@@ -1,5 +1,9 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.enums.CheckKind;
+import be.kdg.airfreight.loadplanning.domain.enums.Result;
+import be.kdg.airfreight.loadplanning.domain.enums.Severity;
+
 import java.util.Objects;
 
 public record LoadCheck(CheckKind kind, Severity severity, Result result, String explanation) {

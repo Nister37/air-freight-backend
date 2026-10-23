@@ -3,7 +3,7 @@ package be.kdg.airfreight.partnermessaging.adapter.out.rabbit;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.FlightNumber;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import be.kdg.airfreight.partnermessaging.domain.PartnerMessage;
 import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
 import org.junit.jupiter.api.Test;

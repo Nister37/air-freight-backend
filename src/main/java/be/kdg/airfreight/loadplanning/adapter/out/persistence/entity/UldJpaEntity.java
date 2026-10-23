@@ -1,7 +1,7 @@
 package be.kdg.airfreight.loadplanning.adapter.out.persistence.entity;
 
-import be.kdg.airfreight.loadplanning.domain.Side;
-import be.kdg.airfreight.loadplanning.domain.WeightUnit;
+import be.kdg.airfreight.loadplanning.domain.enums.Side;
+import be.kdg.airfreight.loadplanning.domain.enums.WeightUnit;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;

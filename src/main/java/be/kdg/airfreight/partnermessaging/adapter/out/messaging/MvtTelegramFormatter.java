@@ -5,7 +5,7 @@ import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightNumber;
 import be.kdg.airfreight.common.IataDay;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

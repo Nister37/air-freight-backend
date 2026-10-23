@@ -134,7 +134,7 @@ src/main/java/be/kdg/airfreight/
   simulation/                Non-production HTTP-to-RabbitMQ simulator
 ```
 
-Each module has the packages it needs: `adapter/in/rest`, `adapter/in/listeners`, `adapter/in/api`, `adapter/in/scheduling`, `adapter/out/persistence`, `adapter/out/events`, `adapter/out/api`, `adapter/out/rabbit`, `core`, `domain`, `port/in/usecase`, `port/in/command` and `port/out`. Rabbit topology/configuration is in `adapter/config`; partner formatting and telegram conversion are in `adapter/out/messaging`. HTTP request/response records are separate files.
+Each module has the packages it needs: `adapter/in/rest`, `adapter/in/listeners`, `adapter/in/api`, `adapter/in/scheduling`, `adapter/out/persistence`, `adapter/out/events`, `adapter/out/api`, `adapter/out/rabbit`, `core`, `domain`, `port/in/usecase`, `port/in/command` and `port/out`. Rabbit topology/configuration is in `adapter/config`; partner formatting and telegram conversion are in `adapter/out/messaging`. HTTP request records live in `adapter/in/rest/req` and response records in `adapter/in/rest/res`. Enums declared in a domain live in its `domain/enums` package; shared enums remain in `common`.
 
 Adapters translate input/output, use cases coordinate work, and domain objects enforce business rules. Flight Operations and Load Planning own their controllers and policies. `common/package-info.java` opens shared contracts; modules expose their root-package APIs for synchronous calls. There is no Operations Coordination module.
 

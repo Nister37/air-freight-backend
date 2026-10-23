@@ -3,7 +3,7 @@ package be.kdg.airfreight.partnermessaging.port.out;
 import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.PlacedUld;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;

@@ -4,10 +4,13 @@ import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightNumber;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightStatus;
+import be.kdg.airfreight.common.messages.SsmMessage;
 import be.kdg.airfreight.flightoperations.FlightOperationsApi;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FindFlightsQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FlightSelection;
 import be.kdg.airfreight.flightoperations.adapter.config.FlightOperationsRabbitTopology;
+import be.kdg.airfreight.partnermessaging.port.in.command.CreateFlightListMessageCommand;
+import be.kdg.airfreight.partnermessaging.port.in.usecase.CreateFlightListMessageUseCase;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.core.Message;
@@ -17,6 +20,7 @@ import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -44,8 +49,10 @@ class ScheduleFeedIntegrationTest {
     @Autowired private RabbitListenerEndpointRegistry listeners;
     @Autowired private FlightOperationsApi flights;
     @Autowired private FindFlightsQuery findFlights;
+    @Autowired private CreateFlightListMessageUseCase flightListMessages;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private JsonMapper mapper;
+    @Autowired private JacksonJsonMessageConverter jsonMessageConverter;
     @MockitoBean(name = "rabbitTemplate") private RabbitTemplate rabbit;
     @MockitoBean(name = "mvtRabbitTemplate") private RabbitTemplate telegrams;
 
@@ -55,9 +62,14 @@ class ScheduleFeedIntegrationTest {
         LocalDate to = from.plusDays(1);
         UUID messageId = UUID.randomUUID();
         Message input = schedule(messageId, from, to);
+        input.getMessageProperties().setHeader("__TypeId__", SsmMessage.class.getName());
+        assertInstanceOf(SsmMessage.class, jsonMessageConverter.fromMessage(input));
 
         deliver(input);
-        deliver(input);
+        Message redelivery = schedule(messageId, from, to);
+        redelivery.getMessageProperties().setHeader("__TypeId__",
+                "be.kdg.airfreight.simulation.adapter.out.rabbit.SimulationRabbitPublisherAdapter$SsmMessage");
+        deliver(redelivery);
         deliver(schedule(UUID.randomUUID(), from, to));
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
@@ -73,6 +85,8 @@ class ScheduleFeedIntegrationTest {
         for (Message wire : sent.getAllValues()) {
             var envelope = mapper.readTree(wire.getBody());
             var data = envelope.get("data");
+            assertEquals(4, envelope.size());
+            assertEquals(6, data.size());
             LocalDate date = LocalDate.parse(data.get("scheduledDepartureDate").asString());
             announcedDates.add(date);
             assertEquals("HJ221", data.get("flightNumber").asString());
@@ -81,8 +95,30 @@ class ScheduleFeedIntegrationTest {
             assertEquals(date.atTime(23, 30), java.time.LocalDateTime.parse(data.get("STD").asString()));
             assertEquals(date.plusDays(1).atTime(1, 0), java.time.LocalDateTime.parse(data.get("STA").asString()));
             assertEquals(wire.getMessageProperties().getMessageId(), envelope.get("messageId").asString());
+            assertEquals(1, envelope.get("formatVersion").asInt());
+            assertEquals(1, wire.getMessageProperties().getHeaders().get("formatVersion"));
+            assertEquals(LocalDateTime.parse(envelope.get("producedAt").asString()),
+                    LocalDateTime.parse(wire.getMessageProperties().getHeaders().get("producedAt").toString()));
         }
         assertEquals(Set.of(from, to), announcedDates);
+
+        // The same input port can be called directly without creating another message for the source event.
+        Message firstWire = sent.getAllValues().getFirst();
+        var firstEnvelope = mapper.readTree(firstWire.getBody());
+        UUID firstMessageId = UUID.fromString(firstEnvelope.get("messageId").asString());
+        UUID sourceEventId = jdbc.queryForObject("SELECT source_event_id FROM pm_message WHERE message_id = ?",
+                UUID.class, firstMessageId);
+        LocalDate firstDate = LocalDate.parse(firstEnvelope.get("data").get("scheduledDepartureDate").asString());
+        FlightFacts firstFlight = created.stream()
+                .filter(flight -> flight.id().scheduledDepartureDate().equals(firstDate)).findFirst().orElseThrow();
+        var command = new CreateFlightListMessageCommand(sourceEventId,
+                LocalDateTime.parse(firstEnvelope.get("producedAt").asString()), firstFlight);
+        flightListMessages.createFlightListMessage(command);
+        flightListMessages.createFlightListMessage(command);
+        assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM pm_message WHERE kind = 'FLM'", Integer.class));
+        assertEquals(new String(firstWire.getBody(), java.nio.charset.StandardCharsets.UTF_8),
+                jdbc.queryForObject("SELECT body FROM pm_message WHERE message_id = ?", String.class, firstMessageId));
+        verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), any(Message.class));
 
         // Search the persisted SSM flights through the database filters, including every flight state.
         assertEquals(List.of(created.getLast()), findFlights.findFlights(new FlightSelection(null, null, null, null, null)));

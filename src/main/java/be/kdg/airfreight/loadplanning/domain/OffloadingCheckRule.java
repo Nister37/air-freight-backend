@@ -1,5 +1,7 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.enums.CheckKind;
+
 import be.kdg.airfreight.common.Airport;
 
 import java.util.List;

@@ -1,5 +1,7 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.enums.Side;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;

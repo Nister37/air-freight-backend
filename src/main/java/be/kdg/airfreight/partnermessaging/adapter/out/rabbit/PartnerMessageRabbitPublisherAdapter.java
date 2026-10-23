@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.rabbit;
 
 import be.kdg.airfreight.partnermessaging.adapter.config.PartnerRabbitTopology;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import be.kdg.airfreight.partnermessaging.domain.PartnerMessage;
 import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
 import org.springframework.amqp.core.*;

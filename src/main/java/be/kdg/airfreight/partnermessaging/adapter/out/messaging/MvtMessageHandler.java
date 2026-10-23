@@ -2,7 +2,7 @@ package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightFacts;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 
 import java.time.LocalDateTime;
 

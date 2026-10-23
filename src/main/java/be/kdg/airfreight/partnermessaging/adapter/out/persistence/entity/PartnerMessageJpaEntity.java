@@ -1,5 +1,7 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.persistence.entity;
 
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.partnermessaging.domain.*;
 import jakarta.persistence.*;

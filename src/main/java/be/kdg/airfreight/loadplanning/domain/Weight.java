@@ -1,5 +1,7 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.enums.WeightUnit;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 

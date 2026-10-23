@@ -4,7 +4,7 @@ import be.kdg.airfreight.partnermessaging.port.out.MessageFormatPort;
 import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.PlacedUld;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 import java.time.LocalDateTime;

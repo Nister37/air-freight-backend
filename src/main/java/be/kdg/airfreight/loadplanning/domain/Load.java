@@ -1,5 +1,8 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
+import be.kdg.airfreight.loadplanning.domain.enums.ULDStatus;
+
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;

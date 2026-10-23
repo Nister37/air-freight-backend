@@ -1,5 +1,7 @@
 package be.kdg.airfreight.partnermessaging.core;
 
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+
 import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.partnermessaging.domain.*;

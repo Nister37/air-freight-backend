@@ -1,5 +1,8 @@
 package be.kdg.airfreight.flightoperations.adapter.in.rest;
 
+import be.kdg.airfreight.flightoperations.adapter.in.rest.req.UpdateFlightPolicyRequest;
+import be.kdg.airfreight.flightoperations.adapter.in.rest.res.FlightPolicyResponse;
+
 import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightPolicyQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.UpdateFlightPolicyUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;

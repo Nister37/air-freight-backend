@@ -1,4 +1,6 @@
-package be.kdg.airfreight.loadplanning.adapter.in.rest;
+package be.kdg.airfreight.loadplanning.adapter.in.rest.res;
+
+import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
 
 import be.kdg.airfreight.common.LoadFacts;
 import be.kdg.airfreight.loadplanning.domain.*;

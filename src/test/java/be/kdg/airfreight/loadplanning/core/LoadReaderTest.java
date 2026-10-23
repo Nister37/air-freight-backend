@@ -1,5 +1,9 @@
 package be.kdg.airfreight.loadplanning.core;
 
+import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
+import be.kdg.airfreight.loadplanning.domain.enums.Severity;
+import be.kdg.airfreight.loadplanning.domain.enums.WeightUnit;
+
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.out.LoadPolicyLoadPort;

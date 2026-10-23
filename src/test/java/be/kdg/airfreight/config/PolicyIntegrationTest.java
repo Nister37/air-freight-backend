@@ -5,7 +5,7 @@ import be.kdg.airfreight.flightoperations.FlightOperationsApi;
 import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
 import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightPolicyQuery;
 import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
-import be.kdg.airfreight.loadplanning.domain.Severity;
+import be.kdg.airfreight.loadplanning.domain.enums.Severity;
 import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadPolicyQuery;
 import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadQuery;
 import jakarta.servlet.Filter;

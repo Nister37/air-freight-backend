@@ -1,5 +1,8 @@
 package be.kdg.airfreight.loadplanning.adapter.in.rest;
 
+import be.kdg.airfreight.loadplanning.adapter.in.rest.req.UpdateLoadPolicyRequest;
+import be.kdg.airfreight.loadplanning.adapter.in.rest.res.LoadPolicyResponse;
+
 import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadPolicyQuery;
 import be.kdg.airfreight.loadplanning.port.in.usecase.UpdateLoadPolicyUseCase;
 import org.springframework.security.access.prepost.PreAuthorize;

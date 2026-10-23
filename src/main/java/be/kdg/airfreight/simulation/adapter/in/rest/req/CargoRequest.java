@@ -1,4 +1,4 @@
-package be.kdg.airfreight.simulation.adapter.in.rest;
+package be.kdg.airfreight.simulation.adapter.in.rest.req;
 
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.CargoBooking;
@@ -20,7 +20,7 @@ public record CargoRequest(String flightNumber, LocalDate scheduledDepartureDate
         }
     }
 
-    CargoBooking booking() {
+    public CargoBooking booking() {
         if (!new IataDay(scheduledDepartureDate.getDayOfMonth()).resolve(LocalDate.now(ZoneOffset.UTC))
                 .equals(scheduledDepartureDate)) {
             throw new IllegalArgumentException("Scheduled departure date cannot be represented by the day-only ULD feed at this time");

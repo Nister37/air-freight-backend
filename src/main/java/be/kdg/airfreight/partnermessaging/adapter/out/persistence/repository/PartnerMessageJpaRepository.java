@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.persistence.repository;
 
 import be.kdg.airfreight.partnermessaging.adapter.out.persistence.entity.PartnerMessageJpaEntity;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.*;
 

@@ -1,5 +1,7 @@
 package be.kdg.airfreight.partnermessaging.domain;
 
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+
 import be.kdg.airfreight.common.FlightId;
 import java.time.LocalDateTime;
 import java.util.Objects;

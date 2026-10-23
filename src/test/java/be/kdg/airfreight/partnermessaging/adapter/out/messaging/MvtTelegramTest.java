@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
 import be.kdg.airfreight.common.FlightFacts;
-import be.kdg.airfreight.partnermessaging.domain.MessageKind;
+import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

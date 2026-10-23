@@ -1,4 +1,4 @@
-package be.kdg.airfreight.flightoperations.adapter.in.rest;
+package be.kdg.airfreight.flightoperations.adapter.in.rest.res;
 
 import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
 

@@ -1,4 +1,4 @@
-package be.kdg.airfreight.flightoperations.adapter.in.rest;
+package be.kdg.airfreight.flightoperations.adapter.in.rest.req;
 
 import be.kdg.airfreight.common.DelayPhase;
 

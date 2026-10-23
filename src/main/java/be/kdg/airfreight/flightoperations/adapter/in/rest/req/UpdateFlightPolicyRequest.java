@@ -1,4 +1,4 @@
-package be.kdg.airfreight.flightoperations.adapter.in.rest;
+package be.kdg.airfreight.flightoperations.adapter.in.rest.req;
 
 import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
 import be.kdg.airfreight.flightoperations.port.in.command.UpdateFlightPolicyCommand;
@@ -10,7 +10,7 @@ public record UpdateFlightPolicyRequest(Integer flightRetentionDays, Integer act
         }
     }
 
-    UpdateFlightPolicyCommand toCommand() {
+    public UpdateFlightPolicyCommand toCommand() {
         return new UpdateFlightPolicyCommand(new FlightPolicy(flightRetentionDays, actualTimeToleranceMinutes));
     }
 }

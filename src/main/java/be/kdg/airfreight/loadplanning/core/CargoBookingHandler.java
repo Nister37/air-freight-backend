@@ -5,7 +5,7 @@ import be.kdg.airfreight.loadplanning.domain.Load;
 import be.kdg.airfreight.loadplanning.domain.ULD;
 import be.kdg.airfreight.loadplanning.domain.ULDCode;
 import be.kdg.airfreight.loadplanning.domain.Weight;
-import be.kdg.airfreight.loadplanning.domain.WeightUnit;
+import be.kdg.airfreight.loadplanning.domain.enums.WeightUnit;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

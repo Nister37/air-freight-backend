@@ -1,8 +1,8 @@
 package be.kdg.airfreight.loadplanning.adapter.out.persistence.entity;
 
-import be.kdg.airfreight.loadplanning.domain.CheckKind;
-import be.kdg.airfreight.loadplanning.domain.Result;
-import be.kdg.airfreight.loadplanning.domain.Severity;
+import be.kdg.airfreight.loadplanning.domain.enums.CheckKind;
+import be.kdg.airfreight.loadplanning.domain.enums.Result;
+import be.kdg.airfreight.loadplanning.domain.enums.Severity;
 import jakarta.persistence.*;
 
 import java.util.UUID;
