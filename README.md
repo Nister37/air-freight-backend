@@ -57,11 +57,19 @@ sh ./gradlew bootRun --args='--spring.profiles.active=local,simulation'
 
 Keycloak maps host port `8380` to container port `8080`. This avoids a Windows port reservation previously encountered on `8180`. If Docker reports a forbidden host port, check `netsh interface ipv4 show excludedportrange protocol=tcp` as well as listening processes. Changing the Keycloak host port also requires updating the issuer URI and HTTP client environment.
 
-The `local` profile only enables [data.sql](src/main/resources/data.sql). It adds yesterday's UTC `HJ9001`, `HJ9002` and `HJ9003` fixtures and preserves existing rows. Authentication always uses Keycloak; this profile creates no mock accounts. `HJ9002` has a seeded final-load flag for the flight HTTP examples, not a real CPM history.
+The `local` profile only enables [data.sql](src/main/resources/data.sql). It adds today's UTC `HJ9010` and `HJ9011` and yesterday's `HJ9001`, `HJ9002` and `HJ9003` fixtures, preserving existing rows. Authentication always uses Keycloak; this profile creates no mock accounts. `HJ9002` has a seeded final-load flag for the flight HTTP examples, not a real CPM history.
 
 The simulator requires `simulation` and is excluded whenever `prod` or `production` is active. Omit `local` to avoid sample data and omit `simulation` to disable simulation. The simulator consists of API endpoints only; no simulator UI is required.
 
-[schema.sql](src/main/resources/schema.sql) creates missing tables before Hibernate validates them. It also contains the reference aircraft layout and migration of settings/receipts from the removed coordination module.
+### Create a load-planning demo flight
+
+The `data.sql` flights are persistence snapshots and do not create Load Planning or partner-message state. To create a fresh flight through the real SSM/ULD workflow, keep the backend running with `local,simulation` and follow [simulation.http](src/test/http/simulation.http): submit the schedule as a flight planner, wait for its load, then submit cargo as a load planner. Continue with [loads.http](src/test/http/loads.http) to place cargo and finalise the load. No PowerShell setup script is required.
+
+[schema-creation.sql](init-scripts/sql/schema-creation.sql) creates the module schemas, tables and reference aircraft layout. Docker mounts `./init-scripts/sql` at `/docker-entrypoint-initdb.d` inside PostgreSQL. PostgreSQL runs the SQL files there when it initializes an empty data directory. Restarting an existing database does not run them again.
+
+Partner messages use their existing `message_id` UUID as the primary key. The former generated `sequence` column is removed from the fresh-database schema; an existing database is not upgraded automatically.
+
+Flight Operations owns the `flightoperations` schema, Load Planning owns `loadplanning`, and Partner Messaging owns `partnermessaging`. Spring Modulith's publication registry uses `events`. JPA entities declare their owning schema, and `spring.jpa.hibernate.ddl-auto=validate` checks the prepared database. Normal application startup does not create tables. The `local` profile only inserts sample data into existing tables.
 
 Connection overrides supported by [application.properties](src/main/resources/application.properties) are `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD` and `KEYCLOAK_ISSUER_URI`.
 
@@ -92,7 +100,7 @@ API date-times are UTC `LocalDateTime` strings without `Z` or an offset, for exa
 
 ## Tests and HTTP examples
 
-Automated tests use H2, mocked Rabbit templates and mocked authentication. Docker is unnecessary for these tests:
+Automated tests cover the assignment's four required areas: time and delay rules, SSM processing and FLM publishing, IATA date derivation, and load checks. The SSM integration tests use H2 and mocked Rabbit templates. The test profile initializes H2 from the same schema-creation script, which Gradle includes as a test resource. Docker is unnecessary for these tests:
 
 ```powershell
 .\gradlew.bat test
@@ -103,40 +111,17 @@ On Linux/macOS, use `sh ./gradlew test` or `sh ./gradlew build`. The build write
 
 For live HTTP checks, start the services and backend above, open [src/test/http/](src/test/http) in IntelliJ and select the indicated environment:
 
-1. Run [authentication.http](src/test/http/authentication.http) to obtain a bearer token. Repeat after switching between `planner`, `loader` and `admin`, or when the token expires.
-2. As `planner`, run [errors.http](src/test/http/errors.http) and [flights.http](src/test/http/flights.http).
-3. As `admin`, run [policy.http](src/test/http/policy.http). Each policy's restore request returns it to the saved value.
-4. Follow [simulation.http](src/test/http/simulation.http): submit the schedule as `planner`, wait until its load can be read, then authenticate as `loader` and submit cargo.
-5. Wait for both ULDs, then run [loads.http](src/test/http/loads.http) as `loader`. Its final request waits for CPM processing in Flight Operations.
+1. Run [authentication.http](src/test/http/authentication.http) to obtain a bearer token. Repeat after switching between `planner` and `loader`, or when the token expires.
+2. As `planner`, run [flights.http](src/test/http/flights.http) for a flight query, delay changes, departure and arrival.
+3. Follow [simulation.http](src/test/http/simulation.http): submit the schedule as `planner`, wait until its load can be read, then authenticate as `loader` and submit cargo.
+4. Wait for both ULDs, then run [loads.http](src/test/http/loads.http) as `loader` for placement, checks and finalisation. Repeat its final request until CPM processing is visible in Flight Operations.
+
+These four HTTP files contain 17 requests for the main successful workflows. Separate policy and error suites and additional search/placement examples have been removed to keep testing within the requested minimum scope.
 
 A simulation response of `202` contains message IDs; it does not mean the flights or bookings have finished processing. Flight departure/arrival fixtures and finalisation are one-time actions; restarting preserves those changes. Use fresh test data to repeat the whole workflow.
 
-Last full verification on **2026-10-22**: 57 automated tests passed; all six HTTP files passed against live services (46 checks, including authentication repeated for all three accounts). Nine extra messaging checks verified duplicate handling, rejected-message retention/logging and broker delivery. Three production-profile HTTP checks verified the normal API and disabled simulator. Live tests used separate PostgreSQL databases and RabbitMQ virtual hosts. Their temporary runner and reports live under ignored `build/http-live/`, when available; they are not supplied as a permanent test tool.
 
 Those results do not close the deferred partner-outage guarantee or live retention-expiry verification. Remaining work is recorded in [TODO.md](TODO.md).
-
-## Continuous integration
-
-[.gitlab-ci.yml](.gitlab-ci.yml) runs on every push to `main`, including merged changes. Its single job runs the Gradle tests, builds the runnable JAR and executes all six existing HTTP files with [JetBrains' HTTP Client CLI](https://www.jetbrains.com/help/idea/http-client-cli.html). Failed builds or HTTP assertions fail the pipeline; Gradle and HTTP JUnit reports appear in GitLab.
-
-The job needs a GitLab runner with a Docker executor and internet access. PostgreSQL, RabbitMQ and Keycloak run as fresh job services, without the local Compose volumes. Their temporary service credentials use the job ID inside the isolated job network. [ci/http_test.py](ci/http_test.py) creates the test realm through Keycloak's admin API, generates user passwords and a client secret, starts the backend with `local,simulation`, switches between the three roles and waits for RabbitMQ processing. It never reads the local private HTTP environment. Generated credentials stay under ignored `build/ci/`; the private environment file is removed after each HTTP run and credentials/tokens are redacted from HTTP output and reports.
-
-## Source structure
-
-```text
-src/main/java/be/kdg/airfreight/
-  AirFreightApplication.java
-  common/                    Shared values, events/ and messages/
-  config/                    Shared security and Rabbit configuration
-  flightoperations/          Flight lifecycle, delays, policy and SSM handling
-  loadplanning/              Bookings, positions, checks, policy and ULD handling
-  partnermessaging/           FLM/CPM/MVT creation and publication
-  simulation/                Non-production HTTP-to-RabbitMQ simulator
-```
-
-Each module has the packages it needs: `adapter/in/rest`, `adapter/in/listeners`, `adapter/in/api`, `adapter/in/scheduling`, `adapter/out/persistence`, `adapter/out/events`, `adapter/out/api`, `adapter/out/rabbit`, `core`, `domain`, `port/in/usecase`, `port/in/command` and `port/out`. Rabbit topology/configuration is in `adapter/config`; partner formatting and telegram conversion are in `adapter/out/messaging`. HTTP request records live in `adapter/in/rest/req` and response records in `adapter/in/rest/res`. Enums declared in a domain live in its `domain/enums` package; shared enums remain in `common`.
-
-Adapters translate input/output, use cases coordinate work, and domain objects enforce business rules. Flight Operations and Load Planning own their controllers and policies. `common/package-info.java` opens shared contracts; modules expose their root-package APIs for synchronous calls. There is no Operations Coordination module.
 
 ## Events and RabbitMQ
 
@@ -159,7 +144,7 @@ flowchart LR
 | `airfreight.feeds.dlx` | `ssm`, `uld` | `airfreight.ssm.dlq`, `airfreight.uld.dlq` |
 | `airfreight.partner-messages` | `flm`, `cpm`, `mvt.ed`, `mvt.ea`, `mvt.ad`, `mvt.aa` | `airfreight.partners` |
 
-The simulator and feed listeners share `common.messages.SsmMessage` and `UldMessage`. Listeners translate these records into module-owned commands. Each consumer stores successful message IDs in the same transaction as its changes; duplicates are logged and ignored. Cargo consumption is enabled by default and can be controlled with `airfreight.feeds.cargo.enabled`.
+The simulator and feed listeners share `common.messages.SsmMessage` and `UldMessage`. Listeners translate these records into module-owned commands. Each consumer stores successful message IDs in the same transaction as its changes; duplicates are logged and ignored. Both feed listeners start automatically during normal operation.
 
 Incoming failures retry three times, then are rejected into the appropriate dead-letter queue. Our simulator sets the RabbitMQ message ID; Spring's exhausted-retry warning includes it and the failure. Malformed and rule-breaking messages were verified in the live checks. The exact external SSM/ULD JSON schema still needs confirmation against an authoritative lecturer schema.
 

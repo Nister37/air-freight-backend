@@ -1,6 +1,6 @@
 # Extending the backend
 
-The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations. Import domain enums such as `CheckKind` and `Severity` from `loadplanning.domain.enums`, and `MessageKind` from `partnermessaging.domain.enums`.
+The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations. Value objects and their contracts, including `LoadCheck`, `LoadRules`, `FloorPlan`, `Position` and `Weight`, are in `loadplanning.domain.vo`. Aggregate roots are in `domain.aggregate`, child entities are in `domain.entity`, and check services remain in `loadplanning.domain`. Import domain enums such as `CheckKind` and `Severity` from `loadplanning.domain.enums`, and `MessageKind` from `partnermessaging.domain.enums`.
 
 ## Other load checks
 
@@ -42,7 +42,7 @@ public static LoadChecks standard(LoadRules rules) {
 ## Other floor plans
 
 - A different arrangement of the existing main-deck rows, nose positions, tail positions and door can use `MainDeckFloorPlan`. Store the layout in `lp_aircraft_type` and associate a registration through `lp_aircraft`.
-- For different layout behaviour, implement [FloorPlan](../src/main/java/be/kdg/airfreight/loadplanning/domain/FloorPlan.java): list its positions, recognise valid positions, find a position by code and supply routes to the door.
+- For different layout behaviour, implement [FloorPlan](../src/main/java/be/kdg/airfreight/loadplanning/domain/vo/FloorPlan.java): list its positions, recognise valid positions, find a position by code and supply routes to the door.
 - `routesToDoor(...)` returns alternative routes. Each route lists every position that must be clear, including manoeuvring positions, and excludes the ULD's own position. At least one route must be clear of cargo for another destination.
 - Select the implementation in `AircraftPersistenceAdapter`. Update `LoadPlanResponse` and `FloorPlanResponse` if the HTTP layout shape changes, and update the OpenAPI specification.
 
@@ -64,7 +64,7 @@ This changes the arrangement. A layout with different unloading behaviour needs 
 
 ## Other kinds of positions
 
-1. Implement [Position](../src/main/java/be/kdg/airfreight/loadplanning/domain/Position.java) with a unique code and its left/right weight contributions in kilograms. Use `Weight.toKg()`; return zero for a side to which the position does not contribute.
+1. Implement [Position](../src/main/java/be/kdg/airfreight/loadplanning/domain/vo/Position.java) with a unique code and its left/right weight contributions in kilograms. Use `Weight.toKg()`; return zero for a side to which the position does not contribute.
 2. Include the position in its floor plan and define its unloading routes there. The planner must select a position recognised by that floor plan.
 3. Extend `LoadPersistenceAdapter` to save and restore the new position. It currently stores `MainDeckPosition` as a side and slot. Adjust the database fields if the new position needs different data.
 4. Test valid placement, occupied positions, balance contributions and unloading routes.
@@ -96,10 +96,10 @@ public record CentrePosition(Slot slot) implements Position {
 
 ## Other MVT message types and validation rules
 
-1. Add an `MVT_...` value to `MessageKind` and implement [MvtMessageHandler](../src/main/java/be/kdg/airfreight/partnermessaging/adapter/out/messaging/MvtMessageHandler.java). Supply a unique two-letter code, its kind, airport selection, parsing and formatting.
+1. Add an `MVT_...` value to `MessageKind` and implement [MvtMessageHandler](../src/main/java/be/kdg/airfreight/partnermessaging/adapter/out/messaging/MvtMessageHandler.java). Supply a unique two-letter code, its kind, parsing and formatting.
 2. Put the type's body validation in `parse(...)` and validate values needed for formatting in `format(...)`. Reject invalid values with `IllegalArgumentException`. `MvtTelegramFormatter` handles the common header and delegates the body to the selected handler.
 3. Register the handler in the list in `PartnerRabbitConfiguration.mvtTelegramFormatter()`. Reuse `TimedMvtMessageHandler` only when its UTC `HHmm` format and date rules fit. A separate bean per handler is unnecessary.
-4. Add a routing key in `PartnerRabbitTopology` and map it in `PartnerMessageRabbitPublisherAdapter.routingKey(...)`. Connect the new kind to its business operation when it must be produced.
+4. Add a routing key in `PartnerRabbitTopology` and map it in `PartnerMessageRabbitPublisherAdapter.routingKey(...)`. Connect the new kind to its business operation when it must be produced. The use case supplies the airport for the movement: the departure airport for ED/AD, the arrival airport for EA/AA.
 5. Test valid messages, invalid bodies and formatting/parsing around date boundaries.
 
 Example: `XX` is a placeholder code and `/HHmm` is an invented body format; replace them with the agreed message specification. Add `MVT_XX` to `MessageKind`. The handler checks its own prefix and reuses the existing time validation and date resolution.
@@ -107,18 +107,13 @@ Example: `XX` is a placeholder code and `/HHmm` is an invented body format; repl
 ```java
 public class ExampleMvtMessageHandler implements MvtMessageHandler {
     private final TimedMvtMessageHandler time = new TimedMvtMessageHandler(
-            "XX", MessageKind.MVT_XX, flight -> flight.id().departureAirport());
+            "XX", MessageKind.MVT_XX);
 
     @Override
     public String code() { return "XX"; }
 
     @Override
     public MessageKind kind() { return MessageKind.MVT_XX; }
-
-    @Override
-    public Airport airport(FlightFacts flight) {
-        return flight.id().departureAirport();
-    }
 
     @Override
     public LocalDateTime parse(String body, LocalDateTime readAt) {
@@ -139,10 +134,10 @@ Keep the existing handlers when updating `PartnerRabbitConfiguration.mvtTelegram
 
 ```java
 return new MvtTelegramFormatter(List.of(
-        new TimedMvtMessageHandler("ED", MessageKind.MVT_ED, flight -> flight.id().departureAirport()),
-        new TimedMvtMessageHandler("EA", MessageKind.MVT_EA, FlightFacts::arrivalAirport),
-        new TimedMvtMessageHandler("AD", MessageKind.MVT_AD, flight -> flight.id().departureAirport()),
-        new TimedMvtMessageHandler("AA", MessageKind.MVT_AA, FlightFacts::arrivalAirport),
+        new TimedMvtMessageHandler("ED", MessageKind.MVT_ED),
+        new TimedMvtMessageHandler("EA", MessageKind.MVT_EA),
+        new TimedMvtMessageHandler("AD", MessageKind.MVT_AD),
+        new TimedMvtMessageHandler("AA", MessageKind.MVT_AA),
         new ExampleMvtMessageHandler()));
 ```
 
