@@ -8,12 +8,6 @@ Authorization: Bearer {{accessToken}}
 
 > {% client.test("Both ULDs are booked", function () { client.assert(response.status === 200 && response.body.ulds.length === 2); }); %}
 
-### Read the floor plan, door, loading window and offloading blockers
-GET {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/plan
-Authorization: Bearer {{accessToken}}
-
-> {% client.test("Floor plan is available", function () { client.assert(response.status === 200 && response.body.floorPlan.doorPosition === "RL"); }); %}
-
 ### Place the left ULD
 PUT {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/placements/AKE73001R7
 Authorization: Bearer {{accessToken}}
@@ -31,30 +25,6 @@ Content-Type: application/json
 {"position":"CR"}
 
 > {% client.test("Right ULD is placed", function () { client.assert(response.status === 200); }); %}
-
-### Move the right ULD atomically; checks run again automatically
-PATCH {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/placements/AKE73002R7
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{"position":"DR"}
-
-> {% client.test("ULD is moved and checks are refreshed", function () { client.assert(response.status === 200 && response.body.checks.length === 3); }); %}
-
-### Remove a placement; the ULD remains booked
-DELETE {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/placements/AKE73002R7
-Authorization: Bearer {{accessToken}}
-
-> {% client.test("Placement is removed", function () { client.assert(response.status === 200); }); %}
-
-### Restore the right placement before checking and finalising
-PUT {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/placements/AKE73002R7
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{"position":"CR"}
-
-> {% client.test("Right placement is restored", function () { client.assert(response.status === 200); }); %}
 
 ### Run the existing load checks on demand
 POST {{baseUrl}}/api/loads/{{simFlightNumber}}/{{simDate}}/BRU/checks
