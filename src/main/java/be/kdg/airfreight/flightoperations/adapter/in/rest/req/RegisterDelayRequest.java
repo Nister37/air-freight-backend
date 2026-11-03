@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.adapter.in.rest.req;
 
-import be.kdg.airfreight.common.DelayPhase;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayPhase;
 
 public record RegisterDelayRequest(DelayPhase phase, String code, int minutes, String description) {
     public RegisterDelayRequest {

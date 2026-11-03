@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.port.in.command;
 
-import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadPolicy;
 import java.util.Objects;
 
 public record UpdateLoadPolicyCommand(LoadPolicy policy) {

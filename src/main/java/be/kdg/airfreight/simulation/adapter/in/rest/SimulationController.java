@@ -3,7 +3,6 @@ package be.kdg.airfreight.simulation.adapter.in.rest;
 import be.kdg.airfreight.simulation.adapter.in.rest.req.CargoRequest;
 import be.kdg.airfreight.simulation.adapter.in.rest.req.ScheduleRequest;
 
-import be.kdg.airfreight.simulation.port.in.command.*;
 import be.kdg.airfreight.simulation.port.in.usecase.*;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -30,16 +29,16 @@ class SimulationController {
     List<UUID> schedules(@RequestBody List<ScheduleRequest> requests) {
         requireRecords(requests);
         // Map the complete batch before publishing so invalid input never publishes a partial batch.
-        var command = new SimulateSchedulesCommand(requests.stream().map(ScheduleRequest::schedule).toList());
-        return schedules.simulateSchedules(command);
+        var commands = requests.stream().map(ScheduleRequest::toCommand).toList();
+        return schedules.simulateSchedules(commands);
     }
 
     @PostMapping("/cargo-bookings")
     @ResponseStatus(HttpStatus.ACCEPTED)
     List<UUID> cargo(@RequestBody List<CargoRequest> requests) {
         requireRecords(requests);
-        var command = new SimulateCargoBookingsCommand(requests.stream().map(CargoRequest::booking).toList());
-        return cargo.simulateCargoBookings(command);
+        var commands = requests.stream().map(CargoRequest::toCommand).toList();
+        return cargo.simulateCargoBookings(commands);
     }
 
     private void requireRecords(List<?> requests) {

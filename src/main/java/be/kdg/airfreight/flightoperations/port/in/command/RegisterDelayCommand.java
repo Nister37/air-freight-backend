@@ -1,6 +1,7 @@
 package be.kdg.airfreight.flightoperations.port.in.command;
 
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayPhase;
 import java.util.Objects;
 
 public record RegisterDelayCommand(FlightId flightId, DelayPhase phase, String code, int minutes, String description) {

@@ -1,7 +1,8 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayId;
+
 import be.kdg.airfreight.flightoperations.port.in.command.CorrectDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.usecase.CorrectDelayUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
@@ -23,14 +24,14 @@ class DefaultCorrectDelayUseCase implements CorrectDelayUseCase {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_flight-planner')")
-    public FlightFacts correctDelay(CorrectDelayCommand command) {
+    public Flight correctDelay(CorrectDelayCommand command) {
         Flight flight = flightLookup.required(command.flightId());
         flight.correctDelay(new DelayId(command.delayId()), command.minutes(), command.description());
         return save(flight);
     }
 
-    private FlightFacts save(Flight flight) {
+    private Flight save(Flight flight) {
         updatePorts.forEach(port -> port.update(flight));
-        return flight.facts();
+        return flight;
     }
 }

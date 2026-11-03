@@ -1,18 +1,18 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.persistence.entity;
 
+import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
+
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.partnermessaging.domain.*;
 import jakarta.persistence.*;
 import java.time.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "pm_message")
+@Table(schema = "partnermessaging", name = "pm_message")
 public class PartnerMessageJpaEntity {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) Long sequence;
-    @Column(nullable = false, unique = true) UUID messageId;
+    @Id UUID messageId;
     @Column(nullable = false) UUID sourceEventId;
     @Column(nullable = false) LocalDateTime producedAt;
     int formatVersion;

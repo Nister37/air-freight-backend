@@ -1,7 +1,7 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.common.FlightFacts;
-import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
 import be.kdg.airfreight.flightoperations.port.in.usecase.AnnounceFlightsUseCase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ class DefaultAnnounceFlightsUseCase implements AnnounceFlightsUseCase {
     }
 
     @Override
-    public List<FlightFacts> announceFlights(FlightSchedule schedule) {
+    public List<Flight> announceFlights(FlightSchedule schedule) {
         return flightAnnouncement.announce(schedule);
     }
 }

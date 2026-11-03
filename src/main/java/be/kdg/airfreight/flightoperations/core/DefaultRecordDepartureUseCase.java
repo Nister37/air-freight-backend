@@ -1,7 +1,7 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+
 import be.kdg.airfreight.flightoperations.port.in.command.RecordActualTimeCommand;
 import be.kdg.airfreight.flightoperations.port.in.usecase.RecordDepartureUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
@@ -26,14 +26,14 @@ class DefaultRecordDepartureUseCase implements RecordDepartureUseCase {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_flight-planner')")
-    public FlightFacts recordDeparture(RecordActualTimeCommand command) {
+    public Flight recordDeparture(RecordActualTimeCommand command) {
         Flight flight = flightLookup.required(command.flightId());
         flight.recordDeparture(command.actualTime(), LocalDateTime.now(ZoneOffset.UTC), policyReader.current().actualTimeToleranceMinutes());
         return save(flight);
     }
 
-    private FlightFacts save(Flight flight) {
+    private Flight save(Flight flight) {
         updatePorts.forEach(port -> port.update(flight));
-        return flight.facts();
+        return flight;
     }
 }

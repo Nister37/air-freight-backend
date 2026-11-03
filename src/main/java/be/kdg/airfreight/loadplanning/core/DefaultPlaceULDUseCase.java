@@ -1,12 +1,12 @@
 package be.kdg.airfreight.loadplanning.core;
 
-import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.loadplanning.domain.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.LoadFacts;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadRules;
 import be.kdg.airfreight.loadplanning.domain.LoadChecks;
-import be.kdg.airfreight.loadplanning.domain.FloorPlan;
-import be.kdg.airfreight.loadplanning.domain.Load;
-import be.kdg.airfreight.loadplanning.domain.Position;
-import be.kdg.airfreight.loadplanning.domain.ULDCode;
+import be.kdg.airfreight.loadplanning.domain.vo.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.aggregate.Load;
+import be.kdg.airfreight.loadplanning.domain.vo.Position;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDCode;
 import be.kdg.airfreight.loadplanning.port.in.command.PlaceULDCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.PlaceULDUseCase;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;

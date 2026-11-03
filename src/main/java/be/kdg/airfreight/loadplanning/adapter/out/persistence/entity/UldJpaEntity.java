@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "lp_uld")
+@Table(schema = "loadplanning", name = "lp_uld")
 public class UldJpaEntity {
 
     @Id

@@ -2,12 +2,11 @@ package be.kdg.airfreight.flightoperations.core;
 
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
-import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightNumber;
-import be.kdg.airfreight.common.FlightSchedule;
-import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightPolicy;
 import be.kdg.airfreight.common.events.FlightCreatedEvent;
-import be.kdg.airfreight.flightoperations.domain.Flight;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
 import be.kdg.airfreight.flightoperations.port.out.FlightLoadPort;
 import be.kdg.airfreight.flightoperations.port.out.FlightUpdatePort;
 import org.junit.jupiter.api.Test;
@@ -39,16 +38,19 @@ class DefaultAnnounceFlightsUseCaseTest {
         FlightSchedule schedule = schedule(monday, monday.plusDays(6));
         when(loadPort.load(any())).thenReturn(Optional.empty());
 
-        List<FlightFacts> flights = useCase.announceFlights(schedule);
+        List<Flight> flights = useCase.announceFlights(schedule);
 
         assertEquals(List.of(monday, monday.plusDays(2), monday.plusDays(6)),
-                flights.stream().map(flight -> flight.id().scheduledDepartureDate()).toList());
+                flights.stream().map(flight -> flight.getId().scheduledDepartureDate()).toList());
         ArgumentCaptor<Flight> saved = ArgumentCaptor.forClass(Flight.class);
         verify(updatePort, times(3)).update(saved.capture());
         for (Flight flight : saved.getAllValues()) {
-            assertEquals(flight.facts().id().scheduledDepartureDate().plusDays(1).atTime(1, 0), flight.facts().scheduledArrival());
+            assertEquals(flight.getId().scheduledDepartureDate().plusDays(1).atTime(1, 0), flight.getScheduledArrival());
             FlightCreatedEvent event = assertInstanceOf(FlightCreatedEvent.class, flight.getDomainEvents().getFirst());
-            assertEquals(flight.facts(), event.flight());
+            assertEquals(flight.getId(), event.flightId());
+            assertEquals(flight.getArrivalAirport(), event.arrivalAirport());
+            assertEquals(flight.getScheduledDeparture(), event.scheduledDeparture());
+            assertEquals(flight.getScheduledArrival(), event.scheduledArrival());
         }
     }
 
@@ -56,9 +58,9 @@ class DefaultAnnounceFlightsUseCaseTest {
     void anExistingFlightIsNotAnnouncedAgain() {
         FlightSchedule schedule = schedule(monday, monday);
         Flight existing = Flight.announce(schedule, monday);
-        when(loadPort.load(existing.facts().id())).thenReturn(Optional.of(existing));
+        when(loadPort.load(existing.getId())).thenReturn(Optional.of(existing));
 
-        List<FlightFacts> flights = useCase.announceFlights(schedule);
+        List<Flight> flights = useCase.announceFlights(schedule);
 
         assertTrue(flights.isEmpty());
         verifyNoInteractions(updatePort);

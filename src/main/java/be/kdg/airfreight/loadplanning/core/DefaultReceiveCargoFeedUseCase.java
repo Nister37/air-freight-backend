@@ -1,5 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
+import be.kdg.airfreight.loadplanning.domain.CargoBooking;
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.loadplanning.port.in.command.CargoFeedCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.ReceiveCargoFeedUseCase;

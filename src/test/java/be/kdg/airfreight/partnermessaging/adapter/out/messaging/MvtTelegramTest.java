@@ -1,6 +1,5 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
-import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,10 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MvtTelegramTest {
     private final MvtTelegramFormatter formatter = new MvtTelegramFormatter(List.of(
-            new TimedMvtMessageHandler("ED", MessageKind.MVT_ED, flight -> flight.id().departureAirport()),
-            new TimedMvtMessageHandler("EA", MessageKind.MVT_EA, FlightFacts::arrivalAirport),
-            new TimedMvtMessageHandler("AD", MessageKind.MVT_AD, flight -> flight.id().departureAirport()),
-            new TimedMvtMessageHandler("AA", MessageKind.MVT_AA, FlightFacts::arrivalAirport)));
+            new TimedMvtMessageHandler("ED", MessageKind.MVT_ED),
+            new TimedMvtMessageHandler("EA", MessageKind.MVT_EA),
+            new TimedMvtMessageHandler("AD", MessageKind.MVT_AD),
+            new TimedMvtMessageHandler("AA", MessageKind.MVT_AA)));
 
     @ParameterizedTest
     @CsvSource({

@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.port.in.command;
 
-import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
 import java.util.*;
 
 public record ScheduleFeedCommand(UUID messageId, FlightSchedule schedule) {

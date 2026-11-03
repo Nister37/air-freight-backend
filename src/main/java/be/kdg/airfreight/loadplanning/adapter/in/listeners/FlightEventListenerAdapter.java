@@ -4,7 +4,7 @@ package be.kdg.airfreight.loadplanning.adapter.in.listeners;
 import be.kdg.airfreight.common.events.FlightCreatedEvent;
 import be.kdg.airfreight.common.events.FlightRemovedEvent;
 import be.kdg.airfreight.common.events.FlightTimesChangedEvent;
-import be.kdg.airfreight.loadplanning.port.in.usecase.ReceiveFlightFactsUseCase;
+import be.kdg.airfreight.loadplanning.port.in.usecase.RefreshLoadFlightUseCase;
 import be.kdg.airfreight.loadplanning.port.in.usecase.RemoveLoadForFlightUseCase;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -12,23 +12,23 @@ import org.springframework.stereotype.Component;
 @Component
 class FlightEventListenerAdapter {
 
-    private final ReceiveFlightFactsUseCase receiveFlightFacts;
+    private final RefreshLoadFlightUseCase refreshLoadFlight;
     private final RemoveLoadForFlightUseCase removeLoadForFlight;
 
-    FlightEventListenerAdapter(ReceiveFlightFactsUseCase receiveFlightFacts,
+    FlightEventListenerAdapter(RefreshLoadFlightUseCase refreshLoadFlight,
                                RemoveLoadForFlightUseCase removeLoadForFlight) {
-        this.receiveFlightFacts = receiveFlightFacts;
+        this.refreshLoadFlight = refreshLoadFlight;
         this.removeLoadForFlight = removeLoadForFlight;
     }
 
     @ApplicationModuleListener
     void created(FlightCreatedEvent event) {
-        receiveFlightFacts.receiveFlightFacts(event.flight());
+        refreshLoadFlight.refreshLoadFlight(event.flightId());
     }
 
     @ApplicationModuleListener
     void timesChanged(FlightTimesChangedEvent event) {
-        receiveFlightFacts.receiveFlightFacts(event.flight());
+        refreshLoadFlight.refreshLoadFlight(event.flightId());
     }
 
     @ApplicationModuleListener

@@ -16,6 +16,7 @@ class DefaultCreateFlightListMessageUseCase implements CreateFlightListMessageUs
 
     @Override
     public void createFlightListMessage(CreateFlightListMessageCommand command) {
-        messages.createFlightList(command.sourceEventId(), command.producedAt(), command.flight());
+        messages.createFlightList(command.sourceEventId(), command.producedAt(), command.flightId(),
+                command.arrivalAirport(), command.scheduledDeparture(), command.scheduledArrival());
     }
 }

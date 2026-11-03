@@ -1,7 +1,5 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
-import be.kdg.airfreight.common.Airport;
-import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 
 import java.time.LocalDateTime;
@@ -10,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -22,12 +19,10 @@ public class TimedMvtMessageHandler implements MvtMessageHandler {
 
     private final String code;
     private final MessageKind kind;
-    private final Function<FlightFacts, Airport> airport;
 
-    public TimedMvtMessageHandler(String code, MessageKind kind, Function<FlightFacts, Airport> airport) {
+    public TimedMvtMessageHandler(String code, MessageKind kind) {
         this.code = Objects.requireNonNull(code);
         this.kind = Objects.requireNonNull(kind);
-        this.airport = Objects.requireNonNull(airport);
         if (!code.matches("[A-Z]{2}") || !kind.isTelegram()) {
             throw new IllegalArgumentException("Expected a two-letter MVT code and telegram message kind");
         }
@@ -38,9 +33,6 @@ public class TimedMvtMessageHandler implements MvtMessageHandler {
 
     @Override
     public MessageKind kind() { return kind; }
-
-    @Override
-    public Airport airport(FlightFacts flight) { return airport.apply(flight); }
 
     @Override
     public LocalDateTime parse(String body, LocalDateTime readAt) {

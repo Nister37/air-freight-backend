@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.port.out;
 
-import be.kdg.airfreight.loadplanning.domain.Load;
+import be.kdg.airfreight.loadplanning.domain.aggregate.Load;
 
 public interface LoadUpdatePort {
     void update(Load load);

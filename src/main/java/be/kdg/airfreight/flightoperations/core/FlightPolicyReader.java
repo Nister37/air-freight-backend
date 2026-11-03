@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightPolicy;
 import be.kdg.airfreight.flightoperations.port.out.FlightPolicyLoadPort;
 import org.springframework.stereotype.Component;
 

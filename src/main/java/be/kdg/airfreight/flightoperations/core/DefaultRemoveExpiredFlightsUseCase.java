@@ -1,7 +1,7 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+
 import be.kdg.airfreight.flightoperations.port.in.usecase.RemoveExpiredFlightsUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
 import java.time.*;
@@ -28,7 +28,7 @@ class DefaultRemoveExpiredFlightsUseCase implements RemoveExpiredFlightsUseCase 
     public void removeExpiredFlights() {
         LocalDate cutoff = LocalDate.now(ZoneOffset.UTC).minusDays(policyReader.current().flightRetentionDays());
         for (Flight expired : loadPort.loadExpired(cutoff)) {
-            Flight flight = flightLookup.required(expired.facts().id());
+            Flight flight = flightLookup.required(expired.getId());
             flight.remove();
             updatePorts.forEach(port -> port.remove(flight));
         }

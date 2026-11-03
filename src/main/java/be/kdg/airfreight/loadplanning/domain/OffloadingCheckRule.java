@@ -1,5 +1,12 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.vo.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadCheck;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadRules;
+import be.kdg.airfreight.loadplanning.domain.vo.Position;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDCode;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDPlacement;
+
 import be.kdg.airfreight.loadplanning.domain.enums.CheckKind;
 
 import be.kdg.airfreight.common.Airport;

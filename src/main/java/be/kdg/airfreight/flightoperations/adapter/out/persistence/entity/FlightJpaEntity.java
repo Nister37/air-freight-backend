@@ -5,7 +5,7 @@ import java.time.*;
 import java.util.*;
 
 @Entity
-@Table(name = "fo_flight")
+@Table(schema = "flightoperations", name = "fo_flight")
 public class FlightJpaEntity {
     @Id private String id;
     @Version private Long version;

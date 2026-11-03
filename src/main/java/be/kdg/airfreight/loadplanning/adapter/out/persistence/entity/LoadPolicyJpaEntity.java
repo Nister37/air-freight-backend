@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "lp_policy")
+@Table(schema = "loadplanning", name = "lp_policy")
 public class LoadPolicyJpaEntity {
     public static final int POLICY_ID = 1;
 

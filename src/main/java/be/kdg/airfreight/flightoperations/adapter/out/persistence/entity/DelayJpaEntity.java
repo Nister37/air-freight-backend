@@ -1,11 +1,11 @@
 package be.kdg.airfreight.flightoperations.adapter.out.persistence.entity;
 
-import be.kdg.airfreight.common.DelayPhase;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayPhase;
 import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "fo_delay")
+@Table(schema = "flightoperations", name = "fo_delay")
 public class DelayJpaEntity {
     @Id private UUID delayId;
     private String code;

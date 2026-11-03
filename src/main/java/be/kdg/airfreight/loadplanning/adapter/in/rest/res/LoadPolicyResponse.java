@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.adapter.in.rest.res;
 
-import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadPolicy;
 import be.kdg.airfreight.loadplanning.domain.enums.Severity;
 import java.math.BigDecimal;
 

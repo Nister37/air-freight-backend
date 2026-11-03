@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.adapter.out.events;
 
-import be.kdg.airfreight.loadplanning.domain.Load;
+import be.kdg.airfreight.loadplanning.domain.aggregate.Load;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;

@@ -3,7 +3,7 @@ package be.kdg.airfreight.partnermessaging.adapter.out.persistence;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.partnermessaging.adapter.out.persistence.entity.PartnerMessageJpaEntity;
 import be.kdg.airfreight.partnermessaging.adapter.out.persistence.repository.PartnerMessageJpaRepository;
-import be.kdg.airfreight.partnermessaging.domain.PartnerMessage;
+import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
 import be.kdg.airfreight.partnermessaging.port.out.MessageStorePort;
 import org.slf4j.*;
 import org.springframework.stereotype.Component;

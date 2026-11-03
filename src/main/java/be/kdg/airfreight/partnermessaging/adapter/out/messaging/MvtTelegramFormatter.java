@@ -2,7 +2,6 @@ package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
-import be.kdg.airfreight.common.FlightFacts;
 import be.kdg.airfreight.common.FlightNumber;
 import be.kdg.airfreight.common.IataDay;
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
@@ -27,12 +26,6 @@ public class MvtTelegramFormatter {
     public MvtTelegramFormatter(List<MvtMessageHandler> handlers) {
         handlersByCode = handlers.stream().collect(Collectors.toUnmodifiableMap(MvtMessageHandler::code, handler -> handler));
         handlersByKind = handlers.stream().collect(Collectors.toUnmodifiableMap(MvtMessageHandler::kind, handler -> handler));
-    }
-
-    public String toText(FlightFacts flight, MessageKind kind, LocalDateTime movementTime) {
-        MvtMessageHandler handler = handlerFor(kind);
-        return toText(new MvtTelegram(flight.id().flightNumber(), flight.id().scheduledDepartureDate(),
-                flight.aircraftRegistration(), handler.airport(flight), kind, movementTime));
     }
 
     public String toText(MvtTelegram telegram) {

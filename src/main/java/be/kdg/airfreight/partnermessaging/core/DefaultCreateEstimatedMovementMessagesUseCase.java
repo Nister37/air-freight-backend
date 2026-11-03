@@ -18,12 +18,14 @@ class DefaultCreateEstimatedMovementMessagesUseCase implements CreateEstimatedMo
     @Override
     public void createEstimatedMovementMessages(CreateEstimatedMovementMessagesCommand command) {
         if (command.departureChanged()) {
-            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
-                    MessageKind.MVT_ED, command.flight().estimatedDeparture());
+            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flightId(),
+                    command.aircraftRegistration(), command.flightId().departureAirport(),
+                    MessageKind.MVT_ED, command.estimatedDeparture());
         }
         if (command.arrivalChanged()) {
-            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
-                    MessageKind.MVT_EA, command.flight().estimatedArrival());
+            messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flightId(),
+                    command.aircraftRegistration(), command.arrivalAirport(),
+                    MessageKind.MVT_EA, command.estimatedArrival());
         }
     }
 }

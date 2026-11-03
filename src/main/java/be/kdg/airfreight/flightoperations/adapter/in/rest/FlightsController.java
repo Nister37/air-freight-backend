@@ -1,16 +1,19 @@
 package be.kdg.airfreight.flightoperations.adapter.in.rest;
 
+import be.kdg.airfreight.flightoperations.adapter.in.rest.res.FlightResponse;
+
 import be.kdg.airfreight.flightoperations.adapter.in.rest.req.ActualTimeRequest;
 import be.kdg.airfreight.flightoperations.adapter.in.rest.req.CorrectDelayRequest;
 import be.kdg.airfreight.flightoperations.adapter.in.rest.req.RegisterDelayRequest;
 
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.flightoperations.domain.enums.FlightStatus;
 import be.kdg.airfreight.flightoperations.port.in.command.CorrectDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.command.RecordActualTimeCommand;
 import be.kdg.airfreight.flightoperations.port.in.command.RegisterDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.command.RemoveDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.usecase.CorrectDelayUseCase;
-import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightFactsQuery;
+import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FindFlightsQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FlightSelection;
 import be.kdg.airfreight.flightoperations.port.in.usecase.RecordArrivalUseCase;
@@ -28,7 +31,7 @@ import java.util.UUID;
 @PreAuthorize("hasAnyAuthority('ROLE_flight-planner', 'ROLE_load-planner', 'ROLE_admin')")
 public class FlightsController {
     private final FindFlightsQuery findFlights;
-    private final GetFlightFactsQuery getFlightFacts;
+    private final GetFlightQuery getFlight;
     private final RegisterDelayUseCase registerDelay;
     private final CorrectDelayUseCase correctDelay;
     private final RemoveDelayUseCase removeDelay;
@@ -37,14 +40,14 @@ public class FlightsController {
 
     FlightsController(
             FindFlightsQuery findFlights,
-            GetFlightFactsQuery getFlightFacts,
+            GetFlightQuery getFlight,
             RegisterDelayUseCase registerDelay,
             CorrectDelayUseCase correctDelay,
             RemoveDelayUseCase removeDelay,
             RecordDepartureUseCase recordDeparture,
             RecordArrivalUseCase recordArrival) {
         this.findFlights = findFlights;
-        this.getFlightFacts = getFlightFacts;
+        this.getFlight = getFlight;
         this.registerDelay = registerDelay;
         this.correctDelay = correctDelay;
         this.removeDelay = removeDelay;
@@ -52,38 +55,52 @@ public class FlightsController {
         this.recordArrival = recordArrival;
     }
     @GetMapping
-    List<FlightFacts> list(@RequestParam(required = false) LocalDate date,
-                           @RequestParam(required = false) String number,
-                           @RequestParam(required = false) String departureAirport,
-                           @RequestParam(required = false) String arrivalAirport,
-                           @RequestParam(required = false) FlightStatus status) {
+    List<FlightResponse> list(@RequestParam(required = false) LocalDate date,
+                              @RequestParam(required = false) String number,
+                              @RequestParam(required = false) String departureAirport,
+                              @RequestParam(required = false) String arrivalAirport,
+                              @RequestParam(required = false) FlightStatus status) {
         return findFlights.findFlights(new FlightSelection(date, number == null ? null : new FlightNumber(number),
                 departureAirport == null ? null : new Airport(departureAirport),
-                arrivalAirport == null ? null : new Airport(arrivalAirport), status));
+                arrivalAirport == null ? null : new Airport(arrivalAirport), status))
+                .stream().map(FlightResponse::from).toList();
     }
     @GetMapping("/{number}/{date}/{airport}")
-    FlightFacts get(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport) {
-        return getFlightFacts.getFlightFacts(id(number, date, airport));
+    FlightResponse get(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport) {
+        return FlightResponse.from(getFlight.getFlight(id(number, date, airport)));
     }
     @PostMapping("/{number}/{date}/{airport}/delays")
-    FlightFacts registerDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
-                              @RequestBody RegisterDelayRequest request) {
-        return registerDelay.registerDelay(new RegisterDelayCommand(id(number, date, airport), request.phase(), request.code(), request.minutes(), request.description()));
+    FlightResponse registerDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
+                                 @RequestBody RegisterDelayRequest request) {
+        RegisterDelayCommand command = new RegisterDelayCommand(id(number, date, airport), request.phase(),
+                request.code(), request.minutes(), request.description());
+        return FlightResponse.from(registerDelay.registerDelay(command));
     }
     @PutMapping("/{number}/{date}/{airport}/delays/{delayId}")
-    FlightFacts correctDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
-                             @PathVariable UUID delayId, @RequestBody CorrectDelayRequest request) {
-        return correctDelay.correctDelay(new CorrectDelayCommand(id(number, date, airport), delayId, request.minutes(), request.description()));
+    FlightResponse correctDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
+                                @PathVariable UUID delayId, @RequestBody CorrectDelayRequest request) {
+        CorrectDelayCommand command = new CorrectDelayCommand(id(number, date, airport), delayId,
+                request.minutes(), request.description());
+        return FlightResponse.from(correctDelay.correctDelay(command));
     }
     @DeleteMapping("/{number}/{date}/{airport}/delays/{delayId}")
-    FlightFacts removeDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
-                            @PathVariable UUID delayId) { return removeDelay.removeDelay(new RemoveDelayCommand(id(number, date, airport), delayId)); }
+    FlightResponse removeDelay(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
+                               @PathVariable UUID delayId) {
+        RemoveDelayCommand command = new RemoveDelayCommand(id(number, date, airport), delayId);
+        return FlightResponse.from(removeDelay.removeDelay(command));
+    }
     @PostMapping("/{number}/{date}/{airport}/departure")
-    FlightFacts depart(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
-                        @RequestBody ActualTimeRequest request) { return recordDeparture.recordDeparture(new RecordActualTimeCommand(id(number, date, airport), request.actualTime())); }
+    FlightResponse depart(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
+                          @RequestBody ActualTimeRequest request) {
+        RecordActualTimeCommand command = new RecordActualTimeCommand(id(number, date, airport), request.actualTime());
+        return FlightResponse.from(recordDeparture.recordDeparture(command));
+    }
     @PostMapping("/{number}/{date}/{airport}/arrival")
-    FlightFacts arrive(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
-                       @RequestBody ActualTimeRequest request) { return recordArrival.recordArrival(new RecordActualTimeCommand(id(number, date, airport), request.actualTime())); }
+    FlightResponse arrive(@PathVariable String number, @PathVariable LocalDate date, @PathVariable String airport,
+                          @RequestBody ActualTimeRequest request) {
+        RecordActualTimeCommand command = new RecordActualTimeCommand(id(number, date, airport), request.actualTime());
+        return FlightResponse.from(recordArrival.recordArrival(command));
+    }
     private FlightId id(String number, LocalDate date, String airport) {
         return new FlightId(new FlightNumber(number), date, new Airport(airport));
     }

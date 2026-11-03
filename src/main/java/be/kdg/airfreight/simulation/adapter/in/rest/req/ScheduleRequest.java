@@ -3,7 +3,7 @@ package be.kdg.airfreight.simulation.adapter.in.rest.req;
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightNumber;
-import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.simulation.port.in.command.SimulateScheduleCommand;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -22,8 +22,8 @@ public record ScheduleRequest(LocalDate from, LocalDate to, Set<DayOfWeek> weekd
         }
     }
 
-    public FlightSchedule schedule() {
-        return new FlightSchedule(from, to, weekdays, departureTime, arrivalTime, new FlightNumber(flightNumber),
+    public SimulateScheduleCommand toCommand() {
+        return new SimulateScheduleCommand(from, to, weekdays, departureTime, arrivalTime, new FlightNumber(flightNumber),
                 new Airport(departureAirport), new Airport(arrivalAirport), new AircraftRegistration(aircraftRegistration));
     }
 }

@@ -1,5 +1,17 @@
 package be.kdg.airfreight.loadplanning.adapter.out.persistence;
 
+import be.kdg.airfreight.loadplanning.domain.aggregate.Load;
+import be.kdg.airfreight.loadplanning.domain.entity.ULD;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadCheck;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadId;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadingWindow;
+import be.kdg.airfreight.loadplanning.domain.vo.MainDeckPosition;
+import be.kdg.airfreight.loadplanning.domain.vo.Position;
+import be.kdg.airfreight.loadplanning.domain.vo.Slot;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDCode;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDPlacement;
+import be.kdg.airfreight.loadplanning.domain.vo.Weight;
+
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
@@ -10,7 +22,6 @@ import be.kdg.airfreight.loadplanning.adapter.out.persistence.entity.UldJpaEntit
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.LoadCheckJpaRepository;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.LoadJpaRepository;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.UldJpaRepository;
-import be.kdg.airfreight.loadplanning.domain.*;
 import be.kdg.airfreight.loadplanning.port.out.LoadLoadPort;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.springframework.core.annotation.Order;

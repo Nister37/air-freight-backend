@@ -1,11 +1,11 @@
 package be.kdg.airfreight.simulation.port.out;
 
-import be.kdg.airfreight.common.CargoBooking;
-import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.simulation.port.in.command.SimulateCargoBookingCommand;
+import be.kdg.airfreight.simulation.port.in.command.SimulateScheduleCommand;
 
 import java.util.UUID;
 
 public interface SimulationMessagePublisherPort {
-    void publishSchedule(UUID messageId, FlightSchedule schedule);
-    void publishCargo(CargoBooking booking);
+    void publishSchedule(UUID messageId, SimulateScheduleCommand command);
+    void publishCargo(SimulateCargoBookingCommand command);
 }

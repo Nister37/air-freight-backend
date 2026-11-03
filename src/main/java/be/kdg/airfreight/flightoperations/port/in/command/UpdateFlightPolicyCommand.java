@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.port.in.command;
 
-import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightPolicy;
 import java.util.Objects;
 
 public record UpdateFlightPolicyCommand(FlightPolicy policy) {

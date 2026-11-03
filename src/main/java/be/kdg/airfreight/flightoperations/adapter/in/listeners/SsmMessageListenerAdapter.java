@@ -3,7 +3,7 @@ package be.kdg.airfreight.flightoperations.adapter.in.listeners;
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightNumber;
-import be.kdg.airfreight.common.FlightSchedule;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
 import be.kdg.airfreight.common.messages.SsmMessage;
 import be.kdg.airfreight.flightoperations.adapter.config.FlightOperationsRabbitTopology;
 import be.kdg.airfreight.flightoperations.port.in.command.ScheduleFeedCommand;

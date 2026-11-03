@@ -1,14 +1,19 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.entity.ULD;
+import be.kdg.airfreight.loadplanning.domain.vo.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadCheck;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadingWindow;
+import be.kdg.airfreight.loadplanning.domain.vo.Position;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDCode;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDPlacement;
+
 import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
 import be.kdg.airfreight.loadplanning.domain.enums.Result;
 
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
-import be.kdg.airfreight.common.LoadCheckDetails;
-import be.kdg.airfreight.common.LoadFacts;
-import be.kdg.airfreight.common.UldDetails;
 
 import java.util.List;
 import java.util.Objects;

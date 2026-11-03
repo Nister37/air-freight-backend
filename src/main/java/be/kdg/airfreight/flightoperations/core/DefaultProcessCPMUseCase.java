@@ -1,7 +1,8 @@
 package be.kdg.airfreight.flightoperations.core;
 
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
 import be.kdg.airfreight.flightoperations.port.in.usecase.ProcessCPMUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
 import java.time.*;
@@ -25,16 +26,11 @@ class DefaultProcessCPMUseCase implements ProcessCPMUseCase {
     @Override
     public void processCPM(FlightId id) {
         Flight flight = flightLookup.required(id);
-        if (flight.facts().finalLoadReceived()) {
+        if (flight.isFinalLoadReceived()) {
             LOGGER.info("Duplicate final-load CPM ignored for {}", id.key());
             return;
         }
         flight.confirmFinalLoadReceived();
-        save(flight);
-    }
-
-    private FlightFacts save(Flight flight) {
         updatePorts.forEach(port -> port.update(flight));
-        return flight.facts();
     }
 }

@@ -45,25 +45,29 @@ class OperationalEventListenerAdapter {
     @ApplicationModuleListener
     void created(FlightCreatedEvent event) {
         flightList.createFlightListMessage(new CreateFlightListMessageCommand(
-                event.eventUUID(), event.eventPit(), event.flight()));
+                event.eventUUID(), event.eventPit(), event.flightId(), event.arrivalAirport(),
+                event.scheduledDeparture(), event.scheduledArrival()));
     }
 
     @ApplicationModuleListener
     void estimates(FlightTimesChangedEvent event) {
         estimatedMovement.createEstimatedMovementMessages(new CreateEstimatedMovementMessagesCommand(
-                event.eventUUID(), event.eventPit(), event.flight(), event.departureChanged(), event.arrivalChanged()));
+                event.eventUUID(), event.eventPit(), event.flightId(), event.arrivalAirport(), event.aircraftRegistration(),
+                event.estimatedDeparture(), event.estimatedArrival(), event.departureChanged(), event.arrivalChanged()));
     }
 
     @ApplicationModuleListener
     void departed(FlightDepartedEvent event) {
         departureMovement.createDepartureMovementMessage(new CreateActualMovementMessageCommand(
-                event.eventUUID(), event.eventPit(), event.flight()));
+                event.eventUUID(), event.eventPit(), event.flightId(), event.aircraftRegistration(),
+                event.flightId().departureAirport(), event.actualDeparture()));
     }
 
     @ApplicationModuleListener
     void landed(FlightLandedEvent event) {
         arrivalMovement.createArrivalMovementMessage(new CreateActualMovementMessageCommand(
-                event.eventUUID(), event.eventPit(), event.flight()));
+                event.eventUUID(), event.eventPit(), event.flightId(), event.aircraftRegistration(),
+                event.arrivalAirport(), event.actualArrival()));
     }
 
     @ApplicationModuleListener

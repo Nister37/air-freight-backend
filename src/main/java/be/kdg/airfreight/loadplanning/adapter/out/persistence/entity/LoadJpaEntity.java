@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "lp_load")
+@Table(schema = "loadplanning", name = "lp_load")
 public class LoadJpaEntity {
 
     @Id

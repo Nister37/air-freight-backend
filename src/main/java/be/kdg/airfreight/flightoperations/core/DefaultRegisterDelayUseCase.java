@@ -1,7 +1,10 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
+import be.kdg.airfreight.flightoperations.domain.entity.Delay;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayCode;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayId;
+
 import be.kdg.airfreight.flightoperations.port.in.command.RegisterDelayCommand;
 import be.kdg.airfreight.flightoperations.port.in.usecase.RegisterDelayUseCase;
 import be.kdg.airfreight.flightoperations.port.out.*;
@@ -23,7 +26,7 @@ class DefaultRegisterDelayUseCase implements RegisterDelayUseCase {
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_flight-planner')")
-    public FlightFacts registerDelay(RegisterDelayCommand command) {
+    public Flight registerDelay(RegisterDelayCommand command) {
         Flight flight = flightLookup.required(command.flightId());
         Delay delay = new Delay(DelayId.create(), new DelayCode(command.code()), command.description(), command.minutes());
         switch (command.phase()) {
@@ -33,8 +36,8 @@ class DefaultRegisterDelayUseCase implements RegisterDelayUseCase {
         return save(flight);
     }
 
-    private FlightFacts save(Flight flight) {
+    private Flight save(Flight flight) {
         updatePorts.forEach(port -> port.update(flight));
-        return flight.facts();
+        return flight;
     }
 }

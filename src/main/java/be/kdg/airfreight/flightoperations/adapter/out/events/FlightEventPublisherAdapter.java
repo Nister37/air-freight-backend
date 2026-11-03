@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.adapter.out.events;
 
-import be.kdg.airfreight.flightoperations.domain.Flight;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
 import be.kdg.airfreight.flightoperations.port.out.FlightUpdatePort;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;

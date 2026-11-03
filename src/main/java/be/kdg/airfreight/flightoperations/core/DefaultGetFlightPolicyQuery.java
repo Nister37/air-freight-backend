@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.core;
 
-import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightPolicy;
 import be.kdg.airfreight.flightoperations.port.in.usecase.GetFlightPolicyQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

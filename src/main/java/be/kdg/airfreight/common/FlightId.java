@@ -2,7 +2,7 @@ package be.kdg.airfreight.common;
 
 import java.time.LocalDate;
 import java.util.Objects;
-
+/** Identified by both Flight and Load domains */
 public record FlightId(FlightNumber flightNumber, LocalDate scheduledDepartureDate, Airport departureAirport) {
     public FlightId {
         Objects.requireNonNull(flightNumber, "Flight number is required");

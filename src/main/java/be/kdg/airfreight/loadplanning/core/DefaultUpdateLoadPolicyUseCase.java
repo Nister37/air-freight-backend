@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
-import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadPolicy;
 import be.kdg.airfreight.loadplanning.port.in.command.UpdateLoadPolicyCommand;
 import be.kdg.airfreight.loadplanning.port.in.usecase.UpdateLoadPolicyUseCase;
 import be.kdg.airfreight.loadplanning.port.out.LoadPolicyUpdatePort;

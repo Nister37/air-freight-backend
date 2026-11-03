@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
-import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadPolicy;
 import be.kdg.airfreight.loadplanning.port.in.usecase.GetLoadPolicyQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

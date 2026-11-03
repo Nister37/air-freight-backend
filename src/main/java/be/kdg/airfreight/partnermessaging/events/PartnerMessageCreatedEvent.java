@@ -1,7 +1,7 @@
 package be.kdg.airfreight.partnermessaging.events;
 
 import be.kdg.airfreight.common.events.DomainEvent;
-import be.kdg.airfreight.partnermessaging.domain.PartnerMessage;
+import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

@@ -18,7 +18,7 @@ class UldMessageListenerAdapter {
     private final ReceiveCargoFeedUseCase useCase;
     UldMessageListenerAdapter(ReceiveCargoFeedUseCase useCase) { this.useCase = useCase; }
 
-    @RabbitListener(queues = LoadPlanningRabbitTopology.QUEUE, autoStartup = "${airfreight.feeds.cargo.enabled:false}")
+    @RabbitListener(queues = LoadPlanningRabbitTopology.QUEUE)
     void handleUldMessage(UldMessage payload, Message message) {
         LOGGER.info("Processing ULD message ID {}", message.getMessageProperties().getMessageId());
         CargoFeedCommand command = new CargoFeedCommand(payload.messageId(), new FlightNumber(payload.flightNumber()),

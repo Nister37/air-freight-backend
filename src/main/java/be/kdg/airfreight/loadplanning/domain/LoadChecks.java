@@ -1,5 +1,9 @@
 package be.kdg.airfreight.loadplanning.domain;
 
+import be.kdg.airfreight.loadplanning.domain.vo.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadCheck;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadRules;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -20,7 +24,7 @@ public final class LoadChecks {
                 new UnplacedCargoCheckRule()), rules);
     }
 
-    List<LoadCheck> check(LoadView load, FloorPlan floorPlan) {
+    public List<LoadCheck> check(LoadView load, FloorPlan floorPlan) {
         return checks.stream().map(check -> check.check(load, floorPlan, rules)).toList();
     }
 }

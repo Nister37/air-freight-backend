@@ -1,10 +1,10 @@
 package be.kdg.airfreight.loadplanning.core;
 
-import be.kdg.airfreight.common.CargoBooking;
-import be.kdg.airfreight.loadplanning.domain.Load;
-import be.kdg.airfreight.loadplanning.domain.ULD;
-import be.kdg.airfreight.loadplanning.domain.ULDCode;
-import be.kdg.airfreight.loadplanning.domain.Weight;
+import be.kdg.airfreight.loadplanning.domain.CargoBooking;
+import be.kdg.airfreight.loadplanning.domain.aggregate.Load;
+import be.kdg.airfreight.loadplanning.domain.entity.ULD;
+import be.kdg.airfreight.loadplanning.domain.vo.ULDCode;
+import be.kdg.airfreight.loadplanning.domain.vo.Weight;
 import be.kdg.airfreight.loadplanning.domain.enums.WeightUnit;
 import be.kdg.airfreight.loadplanning.port.out.LoadUpdatePort;
 import org.slf4j.Logger;

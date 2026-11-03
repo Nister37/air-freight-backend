@@ -1,7 +1,6 @@
 package be.kdg.airfreight.flightoperations.core;
 
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.flightoperations.domain.*;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FlightExistsQuery;
 import be.kdg.airfreight.flightoperations.port.out.*;
 import java.time.*;

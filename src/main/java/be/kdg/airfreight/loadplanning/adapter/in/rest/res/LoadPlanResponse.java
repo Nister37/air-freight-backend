@@ -1,8 +1,12 @@
 package be.kdg.airfreight.loadplanning.adapter.in.rest.res;
 
+import be.kdg.airfreight.loadplanning.domain.vo.MainDeckFloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.Position;
+import be.kdg.airfreight.loadplanning.domain.vo.Slot;
+
 import be.kdg.airfreight.loadplanning.domain.enums.LoadStatus;
 
-import be.kdg.airfreight.common.LoadFacts;
+import be.kdg.airfreight.loadplanning.domain.LoadFacts;
 import be.kdg.airfreight.loadplanning.domain.*;
 
 import java.time.LocalDateTime;

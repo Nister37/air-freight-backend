@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "lp_feed_receipt")
+@Table(schema = "loadplanning", name = "lp_feed_receipt")
 public class CargoFeedReceiptJpaEntity {
     @Id UUID messageId;
     protected CargoFeedReceiptJpaEntity() { }

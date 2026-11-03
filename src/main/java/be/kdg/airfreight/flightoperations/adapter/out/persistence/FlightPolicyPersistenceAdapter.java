@@ -1,6 +1,6 @@
 package be.kdg.airfreight.flightoperations.adapter.out.persistence;
 
-import be.kdg.airfreight.flightoperations.domain.FlightPolicy;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightPolicy;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.entity.FlightPolicyJpaEntity;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.FlightPolicyJpaRepository;
 import be.kdg.airfreight.flightoperations.port.out.FlightPolicyLoadPort;

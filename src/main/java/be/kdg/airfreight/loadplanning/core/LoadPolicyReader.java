@@ -1,6 +1,6 @@
 package be.kdg.airfreight.loadplanning.core;
 
-import be.kdg.airfreight.loadplanning.domain.LoadPolicy;
+import be.kdg.airfreight.loadplanning.domain.vo.LoadPolicy;
 import be.kdg.airfreight.loadplanning.port.out.LoadPolicyLoadPort;
 import org.springframework.stereotype.Component;
 

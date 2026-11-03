@@ -1,10 +1,11 @@
 package be.kdg.airfreight.partnermessaging.core;
 
+import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
+
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 
 import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.partnermessaging.domain.*;
 import be.kdg.airfreight.partnermessaging.port.out.*;
 import org.springframework.stereotype.Component;
 import org.slf4j.*;
@@ -25,11 +26,12 @@ class PartnerMessageCreation {
         this.store = store; this.formatter = formatter; this.events = events; this.finalLoadPort = finalLoadPort;
     }
 
-    void createFlightList(UUID sourceEventId, LocalDateTime producedAt, FlightFacts flight) {
-        if (!retained(flight.id())) return;
+    void createFlightList(UUID sourceEventId, LocalDateTime producedAt, FlightId flightId, Airport arrivalAirport,
+                          LocalDateTime scheduledDeparture, LocalDateTime scheduledArrival) {
+        if (!retained(flightId)) return;
         UUID id = UUID.randomUUID();
-        saveAndPublish(new PartnerMessage(id, sourceEventId, producedAt, FORMAT_VERSION, flight.id(), MessageKind.FLM,
-                formatter.flightList(id, producedAt, FORMAT_VERSION, flight)));
+        saveAndPublish(new PartnerMessage(id, sourceEventId, producedAt, FORMAT_VERSION, flightId, MessageKind.FLM,
+                formatter.flightList(id, producedAt, FORMAT_VERSION, flightId, arrivalAirport, scheduledDeparture, scheduledArrival)));
     }
 
     boolean createCargoPositions(UUID sourceEventId, LocalDateTime producedAt, FlightId flightId,
@@ -41,11 +43,11 @@ class PartnerMessageCreation {
         return true;
     }
 
-    void createTelegram(UUID sourceEventId, LocalDateTime producedAt, FlightFacts flight, MessageKind kind,
-                        LocalDateTime movement) {
-        if (!retained(flight.id())) return;
+    void createTelegram(UUID sourceEventId, LocalDateTime producedAt, FlightId flightId, AircraftRegistration aircraftRegistration,
+                        Airport airport, MessageKind kind, LocalDateTime movement) {
+        if (!retained(flightId)) return;
         saveAndPublish(new PartnerMessage(UUID.randomUUID(), sourceEventId, producedAt, FORMAT_VERSION,
-                flight.id(), kind, formatter.telegram(flight, kind, movement)));
+                flightId, kind, formatter.telegram(flightId, aircraftRegistration, airport, kind, movement)));
     }
 
     private void saveAndPublish(PartnerMessage message) {

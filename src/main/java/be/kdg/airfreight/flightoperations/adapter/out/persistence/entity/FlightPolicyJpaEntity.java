@@ -3,7 +3,7 @@ package be.kdg.airfreight.flightoperations.adapter.out.persistence.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "fo_policy")
+@Table(schema = "flightoperations", name = "fo_policy")
 public class FlightPolicyJpaEntity {
     public static final int POLICY_ID = 1;
 

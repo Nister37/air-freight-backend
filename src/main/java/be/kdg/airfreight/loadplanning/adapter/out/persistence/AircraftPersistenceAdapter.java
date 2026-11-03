@@ -4,9 +4,9 @@ import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.entity.AircraftTypeJpaEntity;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.AircraftJpaRepository;
 import be.kdg.airfreight.loadplanning.adapter.out.persistence.repository.AircraftTypeJpaRepository;
-import be.kdg.airfreight.loadplanning.domain.FloorPlan;
-import be.kdg.airfreight.loadplanning.domain.MainDeckFloorPlan;
-import be.kdg.airfreight.loadplanning.domain.Slot;
+import be.kdg.airfreight.loadplanning.domain.vo.FloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.MainDeckFloorPlan;
+import be.kdg.airfreight.loadplanning.domain.vo.Slot;
 import be.kdg.airfreight.loadplanning.port.out.AircraftLoadPort;
 import org.springframework.stereotype.Component;
 

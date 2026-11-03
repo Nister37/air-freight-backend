@@ -1,7 +1,8 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
 import be.kdg.airfreight.partnermessaging.port.out.MessageFormatPort;
-import be.kdg.airfreight.common.FlightFacts;
+import be.kdg.airfreight.common.AircraftRegistration;
+import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.PlacedUld;
 import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
@@ -20,8 +21,9 @@ class PartnerMessageFormatAdapter implements MessageFormatPort {
         this.telegrams = telegrams;
     }
     @Override
-    public String flightList(UUID messageId, LocalDateTime producedAt, int version, FlightFacts flight) {
-        return json(messageId, producedAt, version, FlmMessage.from(flight));
+    public String flightList(UUID messageId, LocalDateTime producedAt, int version, FlightId flightId,
+                             Airport arrivalAirport, LocalDateTime scheduledDeparture, LocalDateTime scheduledArrival) {
+        return json(messageId, producedAt, version, FlmMessage.from(flightId, arrivalAirport, scheduledDeparture, scheduledArrival));
     }
 
     @Override
@@ -31,8 +33,10 @@ class PartnerMessageFormatAdapter implements MessageFormatPort {
     }
 
     @Override
-    public String telegram(FlightFacts flight, MessageKind kind, LocalDateTime movementTime) {
-        return telegrams.toText(flight, kind, movementTime);
+    public String telegram(FlightId flightId, AircraftRegistration aircraftRegistration, Airport airport,
+                           MessageKind kind, LocalDateTime movementTime) {
+        return telegrams.toText(new MvtTelegram(flightId.flightNumber(), flightId.scheduledDepartureDate(),
+                aircraftRegistration, airport, kind, movementTime));
     }
 
     private String json(UUID messageId, LocalDateTime producedAt, int version, Object data) {

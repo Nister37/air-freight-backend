@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "lp_load_check")
+@Table(schema = "loadplanning", name = "lp_load_check")
 public class LoadCheckJpaEntity {
 
     @Id

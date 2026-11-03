@@ -1,11 +1,18 @@
 package be.kdg.airfreight.flightoperations.adapter.out.persistence;
 
+import be.kdg.airfreight.flightoperations.domain.entity.Arrival;
+import be.kdg.airfreight.flightoperations.domain.entity.Delay;
+import be.kdg.airfreight.flightoperations.domain.entity.Departure;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayCode;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayId;
+
 import be.kdg.airfreight.common.*;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayPhase;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.entity.DelayJpaEntity;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.entity.FlightJpaEntity;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.DelayJpaRepository;
 import be.kdg.airfreight.flightoperations.adapter.out.persistence.repository.FlightJpaRepository;
-import be.kdg.airfreight.flightoperations.domain.*;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FlightSelection;
 import be.kdg.airfreight.flightoperations.port.out.*;
 import org.springframework.core.annotation.Order;
@@ -35,9 +42,9 @@ class FlightPersistenceAdapter implements FlightLoadPort, FlightUpdatePort {
         return repository.findByScheduledDepartureDateLessThanEqual(date).stream().map(this::toDomain).toList();
     }
     public void update(Flight flight) {
-        FlightJpaEntity entity = repository.findById(flight.facts().id().key()).orElseGet(FlightJpaEntity::new);
+        FlightJpaEntity entity = repository.findById(flight.getId().key()).orElseGet(FlightJpaEntity::new);
         List<DelayJpaEntity> previousDelays = new ArrayList<>(entity.getDelays());
-        updateEntity(entity, flight.facts());
+        updateEntity(entity, flight);
         delays.saveAll(entity.getDelays());
         for (DelayJpaEntity previous : previousDelays) {
             if (!entity.getDelays().contains(previous)) delays.delete(previous);
@@ -45,39 +52,46 @@ class FlightPersistenceAdapter implements FlightLoadPort, FlightUpdatePort {
         repository.saveAndFlush(entity);
     }
     public void remove(Flight flight) {
-        repository.findById(flight.facts().id().key()).ifPresent(entity -> {
+        repository.findById(flight.getId().key()).ifPresent(entity -> {
             delays.deleteAll(entity.getDelays());
             repository.delete(entity);
         });
     }
 
-    private void updateEntity(FlightJpaEntity entity, FlightFacts facts) {
-        entity.setId(facts.id().key());
-        entity.setFlightNumber(facts.id().flightNumber().value());
-        entity.setScheduledDepartureDate(facts.id().scheduledDepartureDate());
-        entity.setDepartureAirport(facts.id().departureAirport().value());
-        entity.setArrivalAirport(facts.arrivalAirport().value());
-        entity.setAircraftRegistration(facts.aircraftRegistration().value());
-        entity.setScheduledDeparture(facts.scheduledDeparture());
-        entity.setScheduledArrival(facts.scheduledArrival());
-        entity.setActualDeparture(facts.actualDeparture());
-        entity.setActualArrival(facts.actualArrival());
-        entity.setFinalLoadReceived(facts.finalLoadReceived());
+    private void updateEntity(FlightJpaEntity entity, Flight flight) {
+        entity.setId(flight.getId().key());
+        entity.setFlightNumber(flight.getId().flightNumber().value());
+        entity.setScheduledDepartureDate(flight.getId().scheduledDepartureDate());
+        entity.setDepartureAirport(flight.getId().departureAirport().value());
+        entity.setArrivalAirport(flight.getArrivalAirport().value());
+        entity.setAircraftRegistration(flight.getAircraftRegistration().value());
+        entity.setScheduledDeparture(flight.getScheduledDeparture());
+        entity.setScheduledArrival(flight.getScheduledArrival());
+        entity.setActualDeparture(flight.getActualDeparture());
+        entity.setActualArrival(flight.getActualArrival());
+        entity.setFinalLoadReceived(flight.isFinalLoadReceived());
 
         List<DelayJpaEntity> previousDelays = entity.getDelays();
         List<DelayJpaEntity> updatedDelays = new ArrayList<>();
-        for (DelayDetails details : facts.delays()) {
-            DelayJpaEntity delay = previousDelays.stream()
-                    .filter(previous -> previous.getDelayId().equals(details.id()))
-                    .findFirst().orElseGet(DelayJpaEntity::new);
-            delay.setDelayId(details.id());
-            delay.setCode(details.code());
-            delay.setDescription(details.description());
-            delay.setMinutes(details.minutes());
-            delay.setPhase(details.phase());
-            updatedDelays.add(delay);
+        for (Delay delay : flight.getDepartureDelays()) {
+            updatedDelays.add(toEntity(delay, DelayPhase.DEPARTURE, previousDelays));
+        }
+        for (Delay delay : flight.getArrivalDelays()) {
+            updatedDelays.add(toEntity(delay, DelayPhase.ARRIVAL, previousDelays));
         }
         entity.setDelays(updatedDelays);
+    }
+
+    private DelayJpaEntity toEntity(Delay delay, DelayPhase phase, List<DelayJpaEntity> previousDelays) {
+        DelayJpaEntity entity = previousDelays.stream()
+                .filter(previous -> previous.getDelayId().equals(delay.id().value()))
+                .findFirst().orElseGet(DelayJpaEntity::new);
+        entity.setDelayId(delay.id().value());
+        entity.setCode(delay.code().value());
+        entity.setDescription(delay.description());
+        entity.setMinutes(delay.minutes());
+        entity.setPhase(phase);
+        return entity;
     }
 
     private Flight toDomain(FlightJpaEntity entity) {

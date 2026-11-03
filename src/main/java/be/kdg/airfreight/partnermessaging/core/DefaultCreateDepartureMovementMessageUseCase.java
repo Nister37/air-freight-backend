@@ -17,7 +17,8 @@ class DefaultCreateDepartureMovementMessageUseCase implements CreateDepartureMov
 
     @Override
     public void createDepartureMovementMessage(CreateActualMovementMessageCommand command) {
-        messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flight(),
-                MessageKind.MVT_AD, command.flight().actualDeparture());
+        messages.createTelegram(command.sourceEventId(), command.producedAt(), command.flightId(),
+                command.aircraftRegistration(), command.airport(),
+                MessageKind.MVT_AD, command.movementTime());
     }
 }

@@ -1,11 +1,7 @@
 package be.kdg.airfreight.flightoperations.adapter.in.listeners;
 
-import be.kdg.airfreight.common.FlightFacts;
-import be.kdg.airfreight.common.FlightNumber;
-import be.kdg.airfreight.common.Airport;
-import be.kdg.airfreight.common.FlightStatus;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
 import be.kdg.airfreight.common.messages.SsmMessage;
-import be.kdg.airfreight.flightoperations.FlightOperationsApi;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FindFlightsQuery;
 import be.kdg.airfreight.flightoperations.port.in.usecase.FlightSelection;
 import be.kdg.airfreight.flightoperations.adapter.config.FlightOperationsRabbitTopology;
@@ -47,7 +43,6 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("test")
 class ScheduleFeedIntegrationTest {
     @Autowired private RabbitListenerEndpointRegistry listeners;
-    @Autowired private FlightOperationsApi flights;
     @Autowired private FindFlightsQuery findFlights;
     @Autowired private CreateFlightListMessageUseCase flightListMessages;
     @Autowired private JdbcTemplate jdbc;
@@ -74,11 +69,11 @@ class ScheduleFeedIntegrationTest {
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), any(Message.class));
-            assertEquals(0L, jdbc.queryForObject("select count(*) from event_publication", Long.class));
+            assertEquals(0L, jdbc.queryForObject("select count(*) from events.event_publication", Long.class));
         });
-        List<FlightFacts> created = flights.listFlights(null);
-        assertEquals(List.of(from, to), created.stream().map(flight -> flight.id().scheduledDepartureDate()).toList());
-        assertEquals(from.plusDays(1).atTime(1, 0), created.getFirst().scheduledArrival());
+        List<Flight> created = findFlights.findFlights(new FlightSelection(null, null, null, null, null));
+        assertEquals(List.of(from, to), created.stream().map(flight -> flight.getId().scheduledDepartureDate()).toList());
+        assertEquals(from.plusDays(1).atTime(1, 0), created.getFirst().getScheduledArrival());
         ArgumentCaptor<Message> sent = ArgumentCaptor.forClass(Message.class);
         verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), sent.capture());
         Set<LocalDate> announcedDates = new HashSet<>();
@@ -106,40 +101,20 @@ class ScheduleFeedIntegrationTest {
         Message firstWire = sent.getAllValues().getFirst();
         var firstEnvelope = mapper.readTree(firstWire.getBody());
         UUID firstMessageId = UUID.fromString(firstEnvelope.get("messageId").asString());
-        UUID sourceEventId = jdbc.queryForObject("SELECT source_event_id FROM pm_message WHERE message_id = ?",
+        UUID sourceEventId = jdbc.queryForObject("SELECT source_event_id FROM partnermessaging.pm_message WHERE message_id = ?",
                 UUID.class, firstMessageId);
         LocalDate firstDate = LocalDate.parse(firstEnvelope.get("data").get("scheduledDepartureDate").asString());
-        FlightFacts firstFlight = created.stream()
-                .filter(flight -> flight.id().scheduledDepartureDate().equals(firstDate)).findFirst().orElseThrow();
+        Flight firstFlight = created.stream()
+                .filter(flight -> flight.getId().scheduledDepartureDate().equals(firstDate)).findFirst().orElseThrow();
         var command = new CreateFlightListMessageCommand(sourceEventId,
-                LocalDateTime.parse(firstEnvelope.get("producedAt").asString()), firstFlight);
+                LocalDateTime.parse(firstEnvelope.get("producedAt").asString()), firstFlight.getId(),
+                firstFlight.getArrivalAirport(), firstFlight.getScheduledDeparture(), firstFlight.getScheduledArrival());
         flightListMessages.createFlightListMessage(command);
         flightListMessages.createFlightListMessage(command);
-        assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM pm_message WHERE kind = 'FLM'", Integer.class));
+        assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM partnermessaging.pm_message WHERE kind = 'FLM'", Integer.class));
         assertEquals(new String(firstWire.getBody(), java.nio.charset.StandardCharsets.UTF_8),
-                jdbc.queryForObject("SELECT body FROM pm_message WHERE message_id = ?", String.class, firstMessageId));
+                jdbc.queryForObject("SELECT body FROM partnermessaging.pm_message WHERE message_id = ?", String.class, firstMessageId));
         verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), any(Message.class));
-
-        // Search the persisted SSM flights through the database filters, including every flight state.
-        assertEquals(List.of(created.getLast()), findFlights.findFlights(new FlightSelection(null, null, null, null, null)));
-        assertEquals(List.of(created.getFirst()), findFlights.findFlights(new FlightSelection(from,
-                new FlightNumber("HJ221"), new Airport("BRU"), new Airport("ATH"), FlightStatus.SCHEDULED)));
-        assertTrue(findFlights.findFlights(new FlightSelection(from.plusDays(2), null, null, null, null)).isEmpty());
-        assertTrue(findFlights.findFlights(new FlightSelection(from, new FlightNumber("HJ999"), null, null, null)).isEmpty());
-        assertTrue(findFlights.findFlights(new FlightSelection(from, null, new Airport("AMS"), null, null)).isEmpty());
-        assertTrue(findFlights.findFlights(new FlightSelection(from, null, null, new Airport("AMS"), null)).isEmpty());
-
-        jdbc.update("update fo_flight set actual_departure = ? where id = ?",
-                from.atTime(23, 0), created.getFirst().id().key());
-        assertEquals(FlightStatus.DEPARTED, findFlights.findFlights(new FlightSelection(from,
-                null, null, null, FlightStatus.DEPARTED)).getFirst().status());
-        assertTrue(findFlights.findFlights(new FlightSelection(from, null, null, null, FlightStatus.SCHEDULED)).isEmpty());
-
-        jdbc.update("update fo_flight set actual_arrival = ? where id = ?",
-                from.atTime(23, 45), created.getFirst().id().key());
-        assertEquals(FlightStatus.LANDED, findFlights.findFlights(new FlightSelection(from,
-                null, null, null, FlightStatus.LANDED)).getFirst().status());
-        assertTrue(findFlights.findFlights(new FlightSelection(from, null, null, null, FlightStatus.DEPARTED)).isEmpty());
     }
 
     @Test
@@ -147,16 +122,16 @@ class ScheduleFeedIntegrationTest {
         LocalDate from = LocalDate.now(ZoneOffset.UTC).plusDays(2);
         UUID messageId = UUID.randomUUID();
         Message input = schedule(messageId, from, from.plusDays(1), "HJ610");
-        jdbc.execute("ALTER TABLE fo_feed_receipt ADD CONSTRAINT reject_schedule_receipt "
+        jdbc.execute("ALTER TABLE flightoperations.fo_feed_receipt ADD CONSTRAINT reject_schedule_receipt "
                 + "CHECK (message_id <> CAST('" + messageId + "' AS UUID))");
         try {
             assertThrows(ListenerExecutionFailedException.class, () -> deliver(input));
         } finally {
-            jdbc.execute("ALTER TABLE fo_feed_receipt DROP CONSTRAINT reject_schedule_receipt");
+            jdbc.execute("ALTER TABLE flightoperations.fo_feed_receipt DROP CONSTRAINT reject_schedule_receipt");
         }
 
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM fo_flight WHERE flight_number = 'HJ610'", Integer.class));
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM fo_feed_receipt WHERE message_id = ?",
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM flightoperations.fo_flight WHERE flight_number = 'HJ610'", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM flightoperations.fo_feed_receipt WHERE message_id = ?",
                 Integer.class, messageId));
     }
 

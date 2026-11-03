@@ -1,5 +1,7 @@
 package be.kdg.airfreight.loadplanning.adapter.in.rest;
 
+import be.kdg.airfreight.loadplanning.domain.LoadFacts;
+
 import be.kdg.airfreight.loadplanning.adapter.in.rest.req.FinalisationRequest;
 import be.kdg.airfreight.loadplanning.adapter.in.rest.req.PlacementRequest;
 import be.kdg.airfreight.loadplanning.adapter.in.rest.res.LoadPlanResponse;

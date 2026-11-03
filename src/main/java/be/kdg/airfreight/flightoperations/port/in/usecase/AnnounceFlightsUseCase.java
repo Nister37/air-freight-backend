@@ -1,9 +1,9 @@
 package be.kdg.airfreight.flightoperations.port.in.usecase;
 
-import be.kdg.airfreight.common.*;
-import java.time.*;
+import be.kdg.airfreight.flightoperations.domain.aggregate.Flight;
+import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
 import java.util.*;
 
 public interface AnnounceFlightsUseCase {
-    List<FlightFacts> announceFlights(FlightSchedule schedule);
+    List<Flight> announceFlights(FlightSchedule schedule);
 }
