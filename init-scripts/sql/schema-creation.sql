@@ -27,6 +27,29 @@ CREATE TABLE IF NOT EXISTS flightoperations.fo_delay (
     minutes INTEGER NOT NULL,
     phase VARCHAR(255) NOT NULL
 );
+-- Delay changes are retained in order; snapshots only shorten reconstruction.
+CREATE TABLE IF NOT EXISTS flightoperations.fo_delay_event (
+    event_id UUID PRIMARY KEY,
+    flight_id VARCHAR(255) NOT NULL REFERENCES flightoperations.fo_flight(id) ON DELETE CASCADE,
+    sequence_number BIGINT NOT NULL,
+    event_pit TIMESTAMP NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    phase VARCHAR(255) NOT NULL,
+    delay_id UUID NOT NULL,
+    code VARCHAR(255) NOT NULL,
+    description VARCHAR(4000) NOT NULL,
+    minutes INTEGER NOT NULL,
+    UNIQUE (flight_id, sequence_number)
+);
+CREATE TABLE IF NOT EXISTS flightoperations.fo_delay_snapshot (
+    snapshot_id UUID PRIMARY KEY,
+    flight_id VARCHAR(255) NOT NULL REFERENCES flightoperations.fo_flight(id) ON DELETE CASCADE,
+    sequence_number BIGINT NOT NULL,
+    snapshot_date TIMESTAMP NOT NULL,
+    departure_delays TEXT NOT NULL,
+    arrival_delays TEXT NOT NULL,
+    UNIQUE (flight_id, sequence_number)
+);
 CREATE TABLE IF NOT EXISTS partnermessaging.pm_message (
     message_id UUID PRIMARY KEY,
     source_event_id UUID NOT NULL,

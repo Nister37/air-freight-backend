@@ -5,6 +5,7 @@ import be.kdg.airfreight.flightoperations.domain.entity.Delay;
 import be.kdg.airfreight.flightoperations.domain.entity.Departure;
 
 import be.kdg.airfreight.flightoperations.domain.vo.DelayId;
+import be.kdg.airfreight.flightoperations.domain.vo.DelayCode;
 import be.kdg.airfreight.flightoperations.domain.vo.FlightSchedule;
 
 import be.kdg.airfreight.common.events.FlightTimesChangedEvent;
@@ -15,6 +16,9 @@ import be.kdg.airfreight.common.events.FlightRemovedEvent;
 import be.kdg.airfreight.common.events.DomainEvent;
 import be.kdg.airfreight.common.*;
 import be.kdg.airfreight.flightoperations.domain.enums.FlightStatus;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayEventType;
+import be.kdg.airfreight.flightoperations.domain.enums.DelayPhase;
+import be.kdg.airfreight.common.events.DelayEvent;
 import be.kdg.airfreight.flightoperations.DelayNotFoundException;
 import java.time.*;
 import java.util.*;
@@ -61,6 +65,40 @@ public class Flight {
         return new Flight(id, arrivalAirport, registration, departure, arrival, finalLoadReceived);
     }
 
+    /** Replays delay events in stream order after the supplied snapshot, without publishing them. */
+    public static Flight replayDelays(FlightId id, Airport arrivalAirport, AircraftRegistration registration,
+                                     Departure departure, Arrival arrival, boolean finalLoadReceived,
+                                     List<DelayEvent> history) {
+        List<Delay> departureDelays = new ArrayList<>(departure.delays());
+        List<Delay> arrivalDelays = new ArrayList<>(arrival.delays());
+        for (DelayEvent event : history) {
+            replayDelay(DelayPhase.valueOf(event.phase()) == DelayPhase.DEPARTURE ? departureDelays : arrivalDelays, event);
+        }
+        return restore(id, arrivalAirport, registration,
+                Departure.restore(departure.scheduledTime(), departure.actualTime(), departureDelays),
+                Arrival.restore(arrival.scheduledTime(), arrival.actualTime(), arrivalDelays), finalLoadReceived);
+    }
+
+    private static void replayDelay(List<Delay> delays, DelayEvent event) {
+        Delay delay = new Delay(new DelayId(event.delayId()), new DelayCode(event.code()), event.description(), event.minutes());
+        DelayEventType type = DelayEventType.valueOf(event.type());
+        int index = -1;
+        for (int i = 0; i < delays.size(); i++) {
+            if (delays.get(i).id().equals(delay.id())) { index = i; break; }
+        }
+        switch (type) {
+            case REGISTERED -> {
+                if (index >= 0) throw new IllegalStateException("Duplicate delay in stored history");
+                delays.add(delay);
+            }
+            case CORRECTED, REMOVED -> {
+                if (index < 0) throw new IllegalStateException("Missing delay in stored history");
+                if (type == DelayEventType.CORRECTED) delays.set(index, delay);
+                else delays.remove(index);
+            }
+        }
+    }
+
     public void remove() {
         domainEvents.add(new FlightRemovedEvent(id));
     }
@@ -73,6 +111,7 @@ public class Flight {
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
         departure.registerDelay(delay);
+        recordDelayChange(DelayEventType.REGISTERED, DelayPhase.DEPARTURE, delay);
         recordEstimateChanges(oldDeparture, oldArrival);
     }
 
@@ -81,6 +120,7 @@ public class Flight {
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
         arrival.registerDelay(delay);
+        recordDelayChange(DelayEventType.REGISTERED, DelayPhase.ARRIVAL, delay);
         recordEstimateChanges(oldDeparture, oldArrival);
     }
 
@@ -96,18 +136,27 @@ public class Flight {
         validateTotalDelay(totalDelayMinutes() - old.minutes() + corrected.minutes());
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
-        if (departure.hasDelay(id)) departure.correctDelay(id, minutes, description);
+        DelayPhase phase = departure.hasDelay(id) ? DelayPhase.DEPARTURE : DelayPhase.ARRIVAL;
+        if (phase == DelayPhase.DEPARTURE) departure.correctDelay(id, minutes, description);
         else arrival.correctDelay(id, minutes, description);
+        recordDelayChange(DelayEventType.CORRECTED, phase, corrected);
         recordEstimateChanges(oldDeparture, oldArrival);
     }
 
     public void removeDelay(DelayId id) {
-        delay(id);
+        Delay removed = delay(id);
         LocalDateTime oldDeparture = departure.estimatedTime();
         LocalDateTime oldArrival = estimatedArrival();
-        if (departure.hasDelay(id)) departure.removeDelay(id);
+        DelayPhase phase = departure.hasDelay(id) ? DelayPhase.DEPARTURE : DelayPhase.ARRIVAL;
+        if (phase == DelayPhase.DEPARTURE) departure.removeDelay(id);
         else arrival.removeDelay(id);
+        recordDelayChange(DelayEventType.REMOVED, phase, removed);
         recordEstimateChanges(oldDeparture, oldArrival);
+    }
+
+    private void recordDelayChange(DelayEventType type, DelayPhase phase, Delay delay) {
+        domainEvents.add(new DelayEvent(type.name(), phase.name(), delay.id().value(),
+                delay.code().value(), delay.description(), delay.minutes()));
     }
 
     private Delay delay(DelayId id) {
