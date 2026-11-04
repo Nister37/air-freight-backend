@@ -1,9 +1,8 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.rabbit;
 
 import be.kdg.airfreight.partnermessaging.adapter.config.PartnerRabbitTopology;
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
-import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
-import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
+import be.kdg.airfreight.common.messages.MessageKind;
+import be.kdg.airfreight.common.events.PartnerMessageCreatedEvent;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -22,16 +21,15 @@ class PartnerMessageRabbitPublisherAdapter {
 
     @ApplicationModuleListener
     void publish(PartnerMessageCreatedEvent event) {
-        PartnerMessage message = event.message();
-        if (message.kind().isTelegram()) {
-            mvtRabbit.convertAndSend(PartnerRabbitTopology.EXCHANGE, routingKey(message.kind()), message.body(),
-                    wire -> withMetadata(wire, message));
+        if (event.kind().isTelegram()) {
+            mvtRabbit.convertAndSend(PartnerRabbitTopology.EXCHANGE, routingKey(event.kind()), event.body(),
+                    wire -> withMetadata(wire, event));
         } else {
             // Saved JSON is already serialized; the JSON converter would quote a String again.
             MessageProperties properties = new MessageProperties();
             properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
-            Message wire = new Message(message.body().getBytes(StandardCharsets.UTF_8), properties);
-            rabbit.send(PartnerRabbitTopology.EXCHANGE, routingKey(message.kind()), withMetadata(wire, message));
+            Message wire = new Message(event.body().getBytes(StandardCharsets.UTF_8), properties);
+            rabbit.send(PartnerRabbitTopology.EXCHANGE, routingKey(event.kind()), withMetadata(wire, event));
         }
     }
 
@@ -46,11 +44,11 @@ class PartnerMessageRabbitPublisherAdapter {
         };
     }
 
-    private Message withMetadata(Message wire, PartnerMessage message) {
+    private Message withMetadata(Message wire, PartnerMessageCreatedEvent event) {
         MessageProperties properties = wire.getMessageProperties();
-        properties.setMessageId(message.id().toString());
-        properties.setHeader("producedAt", message.producedAt().toString());
-        properties.setHeader("formatVersion", message.formatVersion());
+        properties.setMessageId(event.eventUUID().toString());
+        properties.setHeader("producedAt", event.eventPit().toString());
+        properties.setHeader("formatVersion", event.formatVersion());
         properties.setContentEncoding("UTF-8");
         properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
         return wire;

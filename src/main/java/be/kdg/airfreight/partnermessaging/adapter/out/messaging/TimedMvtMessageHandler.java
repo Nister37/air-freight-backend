@@ -1,6 +1,6 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MessageKind;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;

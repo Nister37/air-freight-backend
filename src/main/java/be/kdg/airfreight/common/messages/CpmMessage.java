@@ -1,7 +1,6 @@
-package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
+package be.kdg.airfreight.common.messages;
 
 import be.kdg.airfreight.common.FlightId;
-import be.kdg.airfreight.common.PlacedUld;
 
 import java.time.LocalDate;
 import java.util.List;

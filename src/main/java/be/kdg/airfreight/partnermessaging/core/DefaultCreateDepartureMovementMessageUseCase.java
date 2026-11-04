@@ -1,6 +1,6 @@
 package be.kdg.airfreight.partnermessaging.core;
 
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MessageKind;
 import be.kdg.airfreight.partnermessaging.port.in.command.CreateActualMovementMessageCommand;
 import be.kdg.airfreight.partnermessaging.port.in.usecase.CreateDepartureMovementMessageUseCase;
 import org.springframework.stereotype.Service;

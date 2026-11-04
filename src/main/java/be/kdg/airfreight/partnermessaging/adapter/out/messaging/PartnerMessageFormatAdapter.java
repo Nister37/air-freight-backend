@@ -1,11 +1,14 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
+import be.kdg.airfreight.common.messages.CpmMessage;
+import be.kdg.airfreight.common.messages.FlmMessage;
+import be.kdg.airfreight.common.messages.MvtTelegram;
 import be.kdg.airfreight.partnermessaging.port.out.MessageFormatPort;
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
-import be.kdg.airfreight.common.PlacedUld;
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.PlacedUld;
+import be.kdg.airfreight.common.messages.MessageKind;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 import java.time.LocalDateTime;

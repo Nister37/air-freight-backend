@@ -1,5 +1,6 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
+import be.kdg.airfreight.common.messages.MvtTelegram;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConversionException;

@@ -3,7 +3,7 @@ package be.kdg.airfreight.partnermessaging.adapter.config;
 import be.kdg.airfreight.partnermessaging.adapter.out.messaging.MvtTelegramConverter;
 import be.kdg.airfreight.partnermessaging.adapter.out.messaging.MvtTelegramFormatter;
 import be.kdg.airfreight.partnermessaging.adapter.out.messaging.TimedMvtMessageHandler;
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MessageKind;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.amqp.autoconfigure.RabbitTemplateConfigurer;

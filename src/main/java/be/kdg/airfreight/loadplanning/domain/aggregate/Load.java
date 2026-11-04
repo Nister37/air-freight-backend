@@ -20,7 +20,7 @@ import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;
 import be.kdg.airfreight.common.events.DomainEvent;
-import be.kdg.airfreight.common.PlacedUld;
+import be.kdg.airfreight.common.messages.PlacedUld;
 import be.kdg.airfreight.common.events.LoadFinalisedEvent;
 
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.events;
 
-import be.kdg.airfreight.partnermessaging.events.PartnerMessageCreatedEvent;
+import be.kdg.airfreight.common.events.PartnerMessageCreatedEvent;
 import be.kdg.airfreight.partnermessaging.port.out.PartnerMessageEventPort;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;

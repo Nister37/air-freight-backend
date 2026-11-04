@@ -1,6 +1,7 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MvtTelegram;
+import be.kdg.airfreight.common.messages.MessageKind;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

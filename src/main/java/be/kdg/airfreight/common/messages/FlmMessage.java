@@ -1,4 +1,4 @@
-package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
+package be.kdg.airfreight.common.messages;
 
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightId;

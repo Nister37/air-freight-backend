@@ -1,7 +1,7 @@
 package be.kdg.airfreight.common.events;
 
 import be.kdg.airfreight.common.FlightId;
-import be.kdg.airfreight.common.PlacedUld;
+import be.kdg.airfreight.common.messages.PlacedUld;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;

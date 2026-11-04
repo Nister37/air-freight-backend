@@ -1,7 +1,6 @@
-package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
+package be.kdg.airfreight.common.messages;
 
 import be.kdg.airfreight.common.*;
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
 import java.time.*;
 import java.util.*;
 

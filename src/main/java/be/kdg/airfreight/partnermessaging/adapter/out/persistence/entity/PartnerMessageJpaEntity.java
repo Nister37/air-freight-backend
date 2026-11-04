@@ -1,8 +1,8 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.persistence.entity;
 
-import be.kdg.airfreight.partnermessaging.domain.aggregate.PartnerMessage;
+import be.kdg.airfreight.common.events.PartnerMessageCreatedEvent;
 
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MessageKind;
 
 import be.kdg.airfreight.common.*;
 import jakarta.persistence.*;
@@ -23,11 +23,11 @@ public class PartnerMessageJpaEntity {
     @Enumerated(EnumType.STRING) MessageKind kind;
     @Column(nullable = false, columnDefinition = "text") String body;
     protected PartnerMessageJpaEntity() { }
-    public PartnerMessageJpaEntity(PartnerMessage message) {
-        messageId = message.id(); sourceEventId = message.sourceEventId();
-        producedAt = message.producedAt(); formatVersion = message.formatVersion();
-        flightKey = message.flightId().key(); flightNumber = message.flightId().flightNumber().value();
-        scheduledDepartureDate = message.flightId().scheduledDepartureDate();
-        departureAirport = message.flightId().departureAirport().value(); kind = message.kind(); body = message.body();
+    public PartnerMessageJpaEntity(UUID sourceEventId, FlightId flightId, PartnerMessageCreatedEvent event) {
+        messageId = event.eventUUID(); this.sourceEventId = sourceEventId;
+        producedAt = event.eventPit(); formatVersion = event.formatVersion();
+        flightKey = flightId.key(); flightNumber = flightId.flightNumber().value();
+        scheduledDepartureDate = flightId.scheduledDepartureDate();
+        departureAirport = flightId.departureAirport().value(); kind = event.kind(); body = event.body();
     }
 }

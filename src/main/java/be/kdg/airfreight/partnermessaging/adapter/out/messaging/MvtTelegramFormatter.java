@@ -1,10 +1,11 @@
 package be.kdg.airfreight.partnermessaging.adapter.out.messaging;
 
+import be.kdg.airfreight.common.messages.MvtTelegram;
 import be.kdg.airfreight.common.AircraftRegistration;
 import be.kdg.airfreight.common.Airport;
 import be.kdg.airfreight.common.FlightNumber;
 import be.kdg.airfreight.common.IataDay;
-import be.kdg.airfreight.partnermessaging.domain.enums.MessageKind;
+import be.kdg.airfreight.common.messages.MessageKind;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

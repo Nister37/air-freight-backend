@@ -1,4 +1,6 @@
-package be.kdg.airfreight.common;
+package be.kdg.airfreight.common.messages;
+
+import be.kdg.airfreight.common.Airport;
 
 import java.math.BigDecimal;
 import java.util.Objects;
