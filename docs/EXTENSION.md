@@ -1,6 +1,6 @@
 # Extending the backend
 
-The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations. Value objects and their contracts, including `LoadCheck`, `LoadRules`, `FloorPlan`, `Position` and `Weight`, are in `loadplanning.domain.vo`. Aggregate roots are in `domain.aggregate`, child entities are in `domain.entity`, and check services remain in `loadplanning.domain`. Import domain enums such as `CheckKind` and `Severity` from `loadplanning.domain.enums`, and `MessageKind` from `partnermessaging.domain.enums`.
+The examples below show possible extensions, not additional assignment requirements. Imports are omitted; add the classes in the same packages as the existing implementations. Value objects and their contracts, including `LoadCheck`, `LoadRules`, `FloorPlan`, `Position` and `Weight`, are in `loadplanning.domain.vo`. Aggregate roots are in `domain.aggregate`, child entities are in `domain.entity`, and check services remain in `loadplanning.domain`. Import domain enums such as `CheckKind` and `Severity` from `loadplanning.domain.enums`. Message contracts and `MessageKind` live in `common.messages`.
 
 ## Other load checks
 
@@ -96,7 +96,7 @@ public record CentrePosition(Slot slot) implements Position {
 
 ## Other MVT message types and validation rules
 
-1. Add an `MVT_...` value to `MessageKind` and implement [MvtMessageHandler](../src/main/java/be/kdg/airfreight/partnermessaging/adapter/out/messaging/MvtMessageHandler.java). Supply a unique two-letter code, its kind, parsing and formatting.
+1. Add an `MVT_...` value to [MessageKind](../src/main/java/be/kdg/airfreight/common/messages/MessageKind.java) and implement [MvtMessageHandler](../src/main/java/be/kdg/airfreight/partnermessaging/adapter/out/messaging/MvtMessageHandler.java). Supply a unique two-letter code, its kind, parsing and formatting.
 2. Put the type's body validation in `parse(...)` and validate values needed for formatting in `format(...)`. Reject invalid values with `IllegalArgumentException`. `MvtTelegramFormatter` handles the common header and delegates the body to the selected handler.
 3. Register the handler in the list in `PartnerRabbitConfiguration.mvtTelegramFormatter()`. Reuse `TimedMvtMessageHandler` only when its UTC `HHmm` format and date rules fit. A separate bean per handler is unnecessary.
 4. Add a routing key in `PartnerRabbitTopology` and map it in `PartnerMessageRabbitPublisherAdapter.routingKey(...)`. Connect the new kind to its business operation when it must be produced. The use case supplies the airport for the movement: the departure airport for ED/AD, the arrival airport for EA/AA.

@@ -144,11 +144,29 @@ flowchart LR
 | `airfreight.feeds.dlx` | `ssm`, `uld` | `airfreight.ssm.dlq`, `airfreight.uld.dlq` |
 | `airfreight.partner-messages` | `flm`, `cpm`, `mvt.ed`, `mvt.ea`, `mvt.ad`, `mvt.aa` | `airfreight.partners` |
 
-The simulator and feed listeners share `common.messages.SsmMessage` and `UldMessage`. Listeners translate these records into module-owned commands. Each consumer stores successful message IDs in the same transaction as its changes; duplicates are logged and ignored. Both feed listeners start automatically during normal operation.
+Message contracts live in `common/messages`: `SsmMessage`, `UldMessage`, `FlmMessage`, `CpmMessage`, `MvtTelegram` and their `MessageKind` classification. Formatters, converters and Rabbit publishers remain in their owning adapters. The simulator and feed listeners share the SSM/ULD records; listeners translate them into module-owned commands. Each consumer stores successful message IDs in the same transaction as its changes; duplicates are logged and ignored. Both feed listeners start automatically during normal operation.
+
+`common/events/PartnerMessageCreatedEvent` carries the message ID, production time, format version, kind and body directly. The storage port accepts this event together with the source-event ID for duplicate prevention and the flight ID for retention cleanup. Its data is saved before publication, and the after-commit Rabbit listener sends the same payload and metadata. There is no separate `PartnerMessage` domain record.
 
 Incoming failures retry three times, then are rejected into the appropriate dead-letter queue. Our simulator sets the RabbitMQ message ID; Spring's exhausted-retry warning includes it and the failure. Malformed and rule-breaking messages were verified in the live checks. The exact external SSM/ULD JSON schema still needs confirmation against an authoritative lecturer schema.
 
 Spring Modulith records transactional event publications. Failed publications are resubmitted every 30 seconds, and outstanding publications are republished on restart. Partner messages are stored before publication; retries reuse the stored body, ID and format metadata. Creation is deduplicated by source event and message kind. The current publisher has no broker-confirmation handling, so a successful template call is not proof of broker acceptance or once-only delivery after an outage.
+
+## Delay event sourcing and snapshots
+
+Flight Operations stores successful delay registrations, corrections and removals in `flightoperations.fo_delay_event`. Description-only corrections are included. One sequence per flight orders both departure and arrival changes; timestamps are metadata rather than the replay order. This follows Piggybank's event history and B06's sequence-ordering example.
+
+`DelayEvent` lives in `common/events` and carries the delay ID, action, phase, code, description and minutes as independent fields. Flight Operations converts these values to its own `Delay` objects and enums when restoring history.
+
+When loading a flight, its delays are reconstructed from the latest `fo_delay_snapshot` and events after that snapshot's sequence. The initial snapshot is sequence zero. Another snapshot is saved after every ten delay changes, as allowed by B06's every-N-events strategy; the interval is the named `DELAY_SNAPSHOT_INTERVAL` constant in `FlightPersistenceAdapter`. Events are retained after a snapshot, and both history and snapshots are removed when the flight expires.
+
+Existing delay rows become the initial checkpoint on the flight's first update. Earlier changes cannot be recovered and are not invented. The existing `fo_delay` rows remain a current-state projection; once a checkpoint exists, reconstruction uses the checkpoint and event history. Replaying history creates no new events or partner messages. Scheduled/actual flight times and load state still use their existing persistence: this is event sourcing of delays, not of the whole flight.
+
+The updated initialization SQL creates the two additional tables without dropping existing data. Docker runs initialization only for an empty database directory. For an existing local database, apply the updated SQL once before starting the backend:
+
+```powershell
+Get-Content .\init-scripts\sql\schema-creation.sql -Raw | docker compose exec -T app_postgres psql -U user -d postgres -v ON_ERROR_STOP=1
+```
 
 ## Extending the backend
 
