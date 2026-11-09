@@ -3,7 +3,7 @@
 # https://gitlab.com/kdg-ti/programming6/material/2026-2027/piggybank-modulith/-/blob/introducing-security/keycloak_setup.md
 # Keycloak: http://localhost:8380; realm: airfreight.
 # Realm roles: flight-planner, load-planner, admin.
-# Users: planner, loader, admin; assign the corresponding role and use local123 for these development fixtures.
+# Users: planner, loader, admin; assign the corresponding role and use the username as the password for planner and loader (admin uses its HTTP environment value).
 # Supply email, first/last name and Email verified; set the password with Temporary off.
 # API client: airfreight-api, Client authentication on, Direct access grants on, Standard flow off.
 # Keep the profile/email/roles scopes. Add an Audience mapper for airfreight-api to the access token.

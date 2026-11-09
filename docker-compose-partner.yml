@@ -1,0 +1,43 @@
+name: kdg
+
+services:
+  partner-service:
+    image: ksmeyers/partner-service:latest
+    container_name: partner-service
+    ports:
+      - '8000:8000'
+    environment:
+      AMQP_URL: 'amqp://user:password@app_rabbitmq:5672/'
+      PARTNER_EXCHANGE: 'partner-exchange'
+      DEMO_ENABLED: 'true'
+    depends_on:
+      app_rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kdg-backend
+
+  app_rabbitmq:
+    image: rabbitmq:4.3.6-management
+    environment:
+      RABBITMQ_DEFAULT_USER: 'user'
+      RABBITMQ_DEFAULT_PASS: 'password'
+    ports:
+      - '5672:5672' # AMQP
+      - '15672:15672' # MGMT
+    networks:
+      - kdg-backend
+    volumes:
+      - ./rabbitmq/data/:/var/lib/rabbitmq/
+      - ./rabbitmq/log/:/var/log/rabbitmq/
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'check_port_connectivity']
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+networks:
+  kdg-backend:
+    name: kdg-back-network
+    driver: bridge

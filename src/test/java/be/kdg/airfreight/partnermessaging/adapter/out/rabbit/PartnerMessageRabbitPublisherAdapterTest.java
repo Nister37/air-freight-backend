@@ -36,7 +36,7 @@ class PartnerMessageRabbitPublisherAdapterTest {
         new PartnerMessageRabbitPublisherAdapter(rabbit, telegrams).publish(restored);
 
         ArgumentCaptor<Message> sent = ArgumentCaptor.forClass(Message.class);
-        verify(rabbit).send(eq("airfreight.partner-messages"), eq("flm"), sent.capture());
+        verify(rabbit).send(eq("partner-exchange"), eq("flm"), sent.capture());
         assertArrayEquals(body.getBytes(StandardCharsets.UTF_8), sent.getValue().getBody());
         assertEquals("application/json", sent.getValue().getMessageProperties().getContentType());
         assertEquals(id.toString(), sent.getValue().getMessageProperties().getMessageId());

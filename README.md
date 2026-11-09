@@ -142,7 +142,7 @@ flowchart LR
 | --- | --- | --- |
 | `airfreight.feeds` | `ssm`, `uld` | `airfreight.ssm`, `airfreight.uld` |
 | `airfreight.feeds.dlx` | `ssm`, `uld` | `airfreight.ssm.dlq`, `airfreight.uld.dlq` |
-| `airfreight.partner-messages` | `flm`, `cpm`, `mvt.ed`, `mvt.ea`, `mvt.ad`, `mvt.aa` | `airfreight.partners` |
+| `partner-exchange` | `flm`, `cpm`, `mvt.ed`, `mvt.ea`, `mvt.ad`, `mvt.aa` | `airfreight.partners` |
 
 Message contracts live in `common/messages`: `SsmMessage`, `UldMessage`, `FlmMessage`, `CpmMessage`, `MvtTelegram` and their `MessageKind` classification. Formatters, converters and Rabbit publishers remain in their owning adapters. The simulator and feed listeners share the SSM/ULD records; listeners translate them into module-owned commands. Each consumer stores successful message IDs in the same transaction as its changes; duplicates are logged and ignored. Both feed listeners start automatically during normal operation.
 

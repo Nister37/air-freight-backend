@@ -5,7 +5,7 @@ import org.springframework.context.annotation.*;
 
 @Configuration
 public class PartnerRabbitTopology {
-    public static final String EXCHANGE = "airfreight.partner-messages";
+    public static final String EXCHANGE = "partner-exchange";
     public static final String QUEUE = "airfreight.partners";
     public static final String FLM = "flm";
     public static final String CPM = "cpm";

@@ -68,14 +68,14 @@ class ScheduleFeedIntegrationTest {
         deliver(schedule(UUID.randomUUID(), from, to));
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), any(Message.class));
+            verify(rabbit, times(2)).send(eq("partner-exchange"), eq("flm"), any(Message.class));
             assertEquals(0L, jdbc.queryForObject("select count(*) from events.event_publication", Long.class));
         });
         List<Flight> created = findFlights.findFlights(new FlightSelection(null, null, null, null, null));
         assertEquals(List.of(from, to), created.stream().map(flight -> flight.getId().scheduledDepartureDate()).toList());
         assertEquals(from.plusDays(1).atTime(1, 0), created.getFirst().getScheduledArrival());
         ArgumentCaptor<Message> sent = ArgumentCaptor.forClass(Message.class);
-        verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), sent.capture());
+        verify(rabbit, times(2)).send(eq("partner-exchange"), eq("flm"), sent.capture());
         Set<LocalDate> announcedDates = new HashSet<>();
         for (Message wire : sent.getAllValues()) {
             var envelope = mapper.readTree(wire.getBody());
@@ -114,7 +114,7 @@ class ScheduleFeedIntegrationTest {
         assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM partnermessaging.pm_message WHERE kind = 'FLM'", Integer.class));
         assertEquals(new String(firstWire.getBody(), java.nio.charset.StandardCharsets.UTF_8),
                 jdbc.queryForObject("SELECT body FROM partnermessaging.pm_message WHERE message_id = ?", String.class, firstMessageId));
-        verify(rabbit, times(2)).send(eq("airfreight.partner-messages"), eq("flm"), any(Message.class));
+        verify(rabbit, times(2)).send(eq("partner-exchange"), eq("flm"), any(Message.class));
     }
 
     @Test
